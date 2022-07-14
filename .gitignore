@@ -1,0 +1,29 @@
+# git
+.git
+
+# Emacs and other temporary files
+*~
+.#*
+\#*#
+TAGS
+tags
+*.swp
+*.orig
+.DS_Store
+# Eclipse files
+.metadata
+.classpath
+.project
+.externalToolBuilders
+.settings
+dot_files
+# Intellij files
+.idea
+
+Makefile.user
+local.properties
+
+# build files
+.gradle
+build
+dist
