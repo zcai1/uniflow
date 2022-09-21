@@ -8,7 +8,7 @@ import org.cfginference.core.model.qualifier.Qualifier;
 import javax.lang.model.type.IntersectionType;
 
 @AutoValue
-public abstract class QualifiedIntersectionType<Q extends Qualifier> extends QualifiedType<Q> {
+public abstract class QualifiedIntersectionType<Q extends Qualifier> extends PrimaryQualifiedType<Q> {
     @Override
     public abstract IntersectionType getJavaType();
 
@@ -18,10 +18,11 @@ public abstract class QualifiedIntersectionType<Q extends Qualifier> extends Qua
         return new AutoValue_QualifiedIntersectionType.Builder<>();
     }
 
+    @Override
     public abstract Builder<Q> toBuilder();
 
     @Override
-    public QualifiedIntersectionType<Q> withQualifier(Q qualifier) {
+    public final QualifiedIntersectionType<Q> withQualifier(Q qualifier) {
         return toBuilder().setQualifier(qualifier).build();
     }
 
@@ -31,8 +32,10 @@ public abstract class QualifiedIntersectionType<Q extends Qualifier> extends Qua
     }
 
     @AutoValue.Builder
-    public abstract static class Builder<Q extends Qualifier> {
+    public abstract static class Builder<Q extends Qualifier> extends PrimaryQualifiedType.Builder<Q> {
+        @Override
         public abstract Builder<Q> setQualifier(Q qualifier);
+
         public abstract Builder<Q> setJavaType(IntersectionType type);
 
         public abstract ImmutableList.Builder<QualifiedType<Q>> boundsBuilder();
@@ -49,6 +52,7 @@ public abstract class QualifiedIntersectionType<Q extends Qualifier> extends Qua
 
         protected abstract QualifiedIntersectionType<Q> autoBuild();
 
+        @Override
         public final QualifiedIntersectionType<Q> build() {
             QualifiedIntersectionType<Q> type = autoBuild();
             Preconditions.checkState(

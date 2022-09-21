@@ -5,6 +5,7 @@ import com.google.common.base.Preconditions;
 import com.google.common.collect.ImmutableList;
 import org.cfginference.core.model.type.QualifiedType;
 import org.cfginference.core.model.qualifier.Qualifier;
+import org.checkerframework.checker.nullness.qual.Nullable;
 
 import javax.lang.model.element.ExecutableElement;
 
@@ -25,11 +26,6 @@ public abstract class QualifiedExecutableElement<Q extends Qualifier> extends Qu
     public abstract QualifiedType<Q> getReceiverType();
 
     @Override
-    public final QualifiedExecutableElement<Q> withQualifier(Q qualifier) {
-        throw new UnsupportedOperationException("No primary qualifier for executable element");
-    }
-
-    @Override
     public final <R, P> R accept(QualifiedElementVisitor<Q, R, P> v, P p) {
         return v.visitExecutable(this, p);
     }
@@ -38,16 +34,22 @@ public abstract class QualifiedExecutableElement<Q extends Qualifier> extends Qu
         return new AutoValue_QualifiedExecutableElement.Builder<>();
     }
 
+    @Override
     public abstract Builder<Q> toBuilder();
 
     @AutoValue.Builder
-    public abstract static class Builder<Q extends Qualifier> {
-        public abstract Builder<Q> setQualifier(Q qualifier);
+    public abstract static class Builder<Q extends Qualifier> extends QualifiedElement.Builder<Q> {
+
         public abstract Builder<Q> setJavaElement(ExecutableElement element);
+
         public abstract Builder<Q> setReturnType(QualifiedType<Q> type);
+
         public abstract Builder<Q> setReceiverType(QualifiedType<Q> type);
+
         public abstract ImmutableList.Builder<QualifiedTypeParameterElement<Q>> typeParametersBuilder();
+
         public abstract ImmutableList.Builder<QualifiedVariableElement<Q>> parametersBuilder();
+
         public abstract ImmutableList.Builder<QualifiedType<Q>> thrownTypesBuilder();
 
         public final Builder<Q> addTypeParameter(QualifiedTypeParameterElement<Q> typeParameter) {
@@ -82,6 +84,7 @@ public abstract class QualifiedExecutableElement<Q extends Qualifier> extends Qu
 
         protected abstract QualifiedExecutableElement<Q> autoBuild();
 
+        @Override
         public final QualifiedExecutableElement<Q> build() {
             QualifiedExecutableElement<Q> element = autoBuild();
             ExecutableElement rawElement = element.getJavaElement();

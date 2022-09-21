@@ -3,13 +3,13 @@ package org.cfginference.core.model.element;
 import com.google.auto.value.AutoValue;
 import com.google.common.base.Preconditions;
 import com.google.common.collect.ImmutableList;
-import org.cfginference.core.model.type.QualifiedType;
 import org.cfginference.core.model.qualifier.Qualifier;
+import org.cfginference.core.model.type.QualifiedType;
 
 import javax.lang.model.element.TypeParameterElement;
 
 @AutoValue
-public abstract class QualifiedTypeParameterElement<Q extends Qualifier> extends QualifiedElement<Q> {
+public abstract class QualifiedTypeParameterElement<Q extends Qualifier> extends PrimaryQualifiedElement<Q> {
     @Override
     public abstract TypeParameterElement getJavaElement();
 
@@ -25,6 +25,7 @@ public abstract class QualifiedTypeParameterElement<Q extends Qualifier> extends
         return v.visitTypeParameter(this, p);
     }
 
+    @Override
     public abstract Builder<Q> toBuilder();
 
     public static <Q extends Qualifier> Builder<Q> builder() {
@@ -32,8 +33,10 @@ public abstract class QualifiedTypeParameterElement<Q extends Qualifier> extends
     }
 
     @AutoValue.Builder
-    public abstract static class Builder<Q extends Qualifier> {
+    public abstract static class Builder<Q extends Qualifier> extends PrimaryQualifiedElement.Builder<Q> {
+        @Override
         public abstract Builder<Q> setQualifier(Q qualifier);
+
         public abstract Builder<Q> setJavaElement(TypeParameterElement element);
 
         public abstract ImmutableList.Builder<QualifiedType<Q>> boundsBuilder();
@@ -50,6 +53,7 @@ public abstract class QualifiedTypeParameterElement<Q extends Qualifier> extends
 
         protected abstract QualifiedTypeParameterElement<Q> autoBuild();
 
+        @Override
         public final QualifiedTypeParameterElement<Q> build() {
             QualifiedTypeParameterElement<Q> element = autoBuild();
             Preconditions.checkState(

@@ -8,12 +8,13 @@ import javax.lang.model.type.TypeMirror;
 import java.util.Objects;
 
 public abstract class QualifiedType<Q extends Qualifier> {
-    @Nullable
-    protected abstract Q getQualifier();
 
-    public final Q getQualifierOrThrow() {
-        Q qual = getQualifier();
-        return Objects.requireNonNull(qual);
+    public Q getQualifier() {
+        throw new UnsupportedOperationException("No primary qualifier for " + this.getClass().getSimpleName());
+    }
+
+    public boolean hasQualifier() {
+        return false;
     }
 
     public abstract TypeMirror getJavaType();
@@ -22,7 +23,12 @@ public abstract class QualifiedType<Q extends Qualifier> {
         return getJavaType().getKind();
     }
 
-    public abstract QualifiedType<Q> withQualifier(Q qualifier);
+    public abstract Builder<Q> toBuilder();
 
     public abstract <R, P> R accept(QualifiedTypeVisitor<Q, R, P> v, P p);
+
+    public static abstract class Builder<Q extends Qualifier> {
+
+        public abstract QualifiedType<Q> build();
+    }
 }

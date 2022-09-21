@@ -6,7 +6,8 @@ import org.cfginference.core.model.qualifier.Qualifier;
 import javax.lang.model.type.ArrayType;
 
 @AutoValue
-public abstract class QualifiedArrayType<Q extends Qualifier> extends QualifiedType<Q> {
+public abstract class QualifiedArrayType<Q extends Qualifier> extends PrimaryQualifiedType<Q> {
+
     @Override
     public abstract ArrayType getJavaType();
 
@@ -16,10 +17,11 @@ public abstract class QualifiedArrayType<Q extends Qualifier> extends QualifiedT
         return new AutoValue_QualifiedArrayType.Builder<>();
     }
 
+    @Override
     public abstract Builder<Q> toBuilder();
 
     @Override
-    public QualifiedArrayType<Q> withQualifier(Q qualifier) {
+    public final QualifiedArrayType<Q> withQualifier(Q qualifier) {
         return toBuilder().setQualifier(qualifier).build();
     }
 
@@ -29,10 +31,15 @@ public abstract class QualifiedArrayType<Q extends Qualifier> extends QualifiedT
     }
 
     @AutoValue.Builder
-    public abstract static class Builder<Q extends Qualifier> {
+    public abstract static class Builder<Q extends Qualifier> extends PrimaryQualifiedType.Builder<Q> {
+        @Override
         public abstract Builder<Q> setQualifier(Q qualifier);
+
         public abstract Builder<Q> setJavaType(ArrayType type);
+
         public abstract Builder<Q> setComponentType(QualifiedType<Q> componentType);
+
+        @Override
         public abstract QualifiedArrayType<Q> build();
     }
 }

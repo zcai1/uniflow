@@ -6,7 +6,7 @@ import org.cfginference.core.model.qualifier.Qualifier;
 import javax.lang.model.type.TypeVariable;
 
 @AutoValue
-public abstract class QualifiedTypeVariable<Q extends Qualifier> extends QualifiedType<Q> {
+public abstract class QualifiedTypeVariable<Q extends Qualifier> extends PrimaryQualifiedType<Q> {
     @Override
     public abstract TypeVariable getJavaType();
 
@@ -18,10 +18,11 @@ public abstract class QualifiedTypeVariable<Q extends Qualifier> extends Qualifi
      return new AutoValue_QualifiedTypeVariable.Builder<>();
     }
 
+    @Override
     public abstract Builder<Q> toBuilder();
 
     @Override
-    public QualifiedTypeVariable<Q> withQualifier(Q qualifier) {
+    public final QualifiedTypeVariable<Q> withQualifier(Q qualifier) {
         return toBuilder().setQualifier(qualifier).build();
     }
 
@@ -31,11 +32,17 @@ public abstract class QualifiedTypeVariable<Q extends Qualifier> extends Qualifi
     }
 
     @AutoValue.Builder
-    public abstract static class Builder<Q extends Qualifier> {
+    public abstract static class Builder<Q extends Qualifier> extends PrimaryQualifiedType.Builder<Q> {
+        @Override
         public abstract Builder<Q> setQualifier(Q qualifier);
+
         public abstract Builder<Q> setJavaType(TypeVariable type);
+
         public abstract Builder<Q> setUpperBound(QualifiedType<Q> upperBound);
+
         public abstract Builder<Q> setLowerBound(QualifiedType<Q> lowerBound);
+
+        @Override
         public abstract QualifiedTypeVariable<Q> build();
     }
 }

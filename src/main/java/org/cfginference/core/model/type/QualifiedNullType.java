@@ -6,7 +6,7 @@ import org.cfginference.core.model.qualifier.Qualifier;
 import javax.lang.model.type.NullType;
 
 @AutoValue
-public abstract class QualifiedNullType<Q extends Qualifier> extends QualifiedType<Q> {
+public abstract class QualifiedNullType<Q extends Qualifier> extends PrimaryQualifiedType<Q> {
     @Override
     public abstract NullType getJavaType();
 
@@ -14,10 +14,11 @@ public abstract class QualifiedNullType<Q extends Qualifier> extends QualifiedTy
         return new AutoValue_QualifiedNullType.Builder<>();
     }
 
+    @Override
     public abstract Builder<Q> toBuilder();
 
     @Override
-    public QualifiedNullType<Q> withQualifier(Q qualifier) {
+    public final QualifiedNullType<Q> withQualifier(Q qualifier) {
         return toBuilder().setQualifier(qualifier).build();
     }
 
@@ -27,9 +28,13 @@ public abstract class QualifiedNullType<Q extends Qualifier> extends QualifiedTy
     }
 
     @AutoValue.Builder
-    public abstract static class Builder<Q extends Qualifier> {
+    public abstract static class Builder<Q extends Qualifier> extends PrimaryQualifiedType.Builder<Q> {
+        @Override
         public abstract Builder<Q> setQualifier(Q qualifier);
+
         public abstract Builder<Q> setJavaType(NullType type);
+
+        @Override
         public abstract QualifiedNullType<Q> build();
     }
 }

@@ -8,7 +8,7 @@ import org.cfginference.core.model.qualifier.Qualifier;
 import javax.lang.model.type.UnionType;
 
 @AutoValue
-public abstract class QualifiedUnionType<Q extends Qualifier> extends QualifiedType<Q> {
+public abstract class QualifiedUnionType<Q extends Qualifier> extends PrimaryQualifiedType<Q> {
     @Override
     public abstract UnionType getJavaType();
 
@@ -18,10 +18,11 @@ public abstract class QualifiedUnionType<Q extends Qualifier> extends QualifiedT
         return new AutoValue_QualifiedUnionType.Builder<>();
     }
 
+    @Override
     public abstract Builder<Q> toBuilder();
 
     @Override
-    public QualifiedUnionType<Q> withQualifier(Q qualifier) {
+    public final QualifiedUnionType<Q> withQualifier(Q qualifier) {
         return toBuilder().setQualifier(qualifier).build();
     }
 
@@ -31,8 +32,10 @@ public abstract class QualifiedUnionType<Q extends Qualifier> extends QualifiedT
     }
 
     @AutoValue.Builder
-    public abstract static class Builder<Q extends Qualifier> {
+    public abstract static class Builder<Q extends Qualifier> extends PrimaryQualifiedType.Builder<Q> {
+        @Override
         public abstract Builder<Q> setQualifier(Q qualifier);
+
         public abstract Builder<Q> setJavaType(UnionType type);
 
         public abstract ImmutableList.Builder<QualifiedType<Q>> alternativesBuilder();
@@ -49,6 +52,7 @@ public abstract class QualifiedUnionType<Q extends Qualifier> extends QualifiedT
 
         protected abstract QualifiedUnionType<Q> autoBuild();
 
+        @Override
         public final QualifiedUnionType<Q> build() {
             QualifiedUnionType<Q> type = autoBuild();
             Preconditions.checkState(
