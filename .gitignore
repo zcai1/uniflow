@@ -26,4 +26,4 @@ local.properties
 # build files
 .gradle
 build
-dist
+bin

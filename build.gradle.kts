@@ -23,6 +23,7 @@ val compilerArgsForJavacModules by extra(arrayOf(
     "--add-exports", "jdk.compiler/com.sun.tools.javac.processing=ALL-UNNAMED",
     "--add-exports", "jdk.compiler/com.sun.tools.javac.tree=ALL-UNNAMED",
     "--add-exports", "jdk.compiler/com.sun.tools.javac.util=ALL-UNNAMED",
+    "--add-exports", "jdk.compiler/com.sun.tools.javac.comp=ALL-UNNAMED",
 ))
 
 java {
@@ -36,18 +37,21 @@ repositories {
 }
 
 dependencies {
-    implementation("org.checkerframework:javacutil:${Versions.CHECKER_FRAMEWORK}")
-    implementation("org.checkerframework:dataflow:${Versions.CHECKER_FRAMEWORK}")
+    implementation("io.github.eisop:javacutil:${Versions.CHECKER_FRAMEWORK}")
+    implementation("io.github.eisop:dataflow:${Versions.CHECKER_FRAMEWORK}")
     implementation("com.google.guava:guava:${Versions.GUAVA}")
 
     annotationProcessor("com.google.auto.value:auto-value:${Versions.AUTO_VALUE}")
     compileOnly("com.google.auto.value:auto-value-annotations:${Versions.AUTO_VALUE}")
 
+    annotationProcessor("com.google.auto.service:auto-service:${Versions.AUTO_SERVICE}")
+    compileOnly("com.google.auto.service:auto-service-annotations:${Versions.AUTO_SERVICE}")
+
     implementation("com.beust:jcommander:${Versions.JCOMMANDER}")
 
     // AFU is an "includedBuild" imported in settings.gradle.kts, so the version number doesn"t matter.
     // https://docs.gradle.org/current/userguide/composite_builds.html#settings_defined_composite
-    implementation("org.checkerframework:annotation-file-utilities:*") {
+    implementation("io.github.eisop:annotation-file-utilities:*") {
         exclude(group = "com.google.errorprone", module = "javac")
     }
 
@@ -64,15 +68,27 @@ allprojects {
         options.isFork = true
         options.forkOptions.jvmArgs = (options.forkOptions.jvmArgs ?: listOf()).plus(compilerArgsForJavacModules)
     }
+
+    tasks.withType<Test> {
+        val args = jvmArgs ?: mutableListOf()
+        args.addAll(compilerArgsForJavacModules)
+        jvmArgs = args
+    }
 }
 
 tasks.shadowJar {
-    archiveBaseName.set("cfg-inf")
+    description = "Creates a fat JAR"
+
+    dependencies {
+        exclude(dependency("junit:.*:.*"))
+    }
 
     manifest {
         attributes["Description"] = "CFG-based Inference"
         attributes["Main-Class"] = "org.cfginference.InferenceMain"
     }
+    archiveFileName.set("cfginf.jar")
+    destinationDirectory.set(file("${projectDir}/bin"))
 }
 
 idea.project.settings {
