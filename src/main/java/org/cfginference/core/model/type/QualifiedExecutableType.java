@@ -4,7 +4,7 @@ import com.google.auto.value.AutoValue;
 import com.google.common.base.Preconditions;
 import com.google.common.collect.ImmutableList;
 import org.cfginference.core.model.qualifier.Qualifier;
-import org.checkerframework.checker.nullness.qual.Nullable;
+import org.cfginference.core.model.util.QualifiedTypeVisitor;
 
 import javax.lang.model.type.ExecutableType;
 
@@ -14,7 +14,8 @@ public abstract class QualifiedExecutableType<Q extends Qualifier> extends Quali
     @Override
     public abstract ExecutableType getJavaType();
 
-    public abstract ImmutableList<QualifiedTypeVariable<Q>> getTypeVariables();
+    // We probably don't need this for the type at call site
+    // public abstract ImmutableList<QualifiedTypeVariable<Q>> getTypeVariables();
 
     public abstract QualifiedType<Q> getReturnType();
 
@@ -45,17 +46,17 @@ public abstract class QualifiedExecutableType<Q extends Qualifier> extends Quali
 
         public abstract Builder<Q> setReceiverType(QualifiedType<Q> receiverType);
 
-        public abstract ImmutableList.Builder<QualifiedTypeVariable<Q>> typeVariablesBuilder();
-
-        public final Builder<Q> addTypeVariable(QualifiedTypeVariable<Q> typeVariable) {
-            typeVariablesBuilder().add(typeVariable);
-            return this;
-        }
-
-        public final Builder<Q> addTypeVariables(Iterable<QualifiedTypeVariable<Q>> typeVariables) {
-            typeVariablesBuilder().addAll(typeVariables);
-            return this;
-        }
+        // public abstract ImmutableList.Builder<QualifiedTypeVariable<Q>> typeVariablesBuilder();
+        //
+        // public final Builder<Q> addTypeVariable(QualifiedTypeVariable<Q> typeVariable) {
+        //     typeVariablesBuilder().add(typeVariable);
+        //     return this;
+        // }
+        //
+        // public final Builder<Q> addTypeVariables(Iterable<QualifiedTypeVariable<Q>> typeVariables) {
+        //     typeVariablesBuilder().addAll(typeVariables);
+        //     return this;
+        // }
 
         public abstract ImmutableList.Builder<QualifiedType<Q>> parameterTypesBuilder();
 
@@ -95,10 +96,10 @@ public abstract class QualifiedExecutableType<Q extends Qualifier> extends Quali
                     type.getThrownTypes().size() == type.getJavaType().getThrownTypes().size(),
                     "Thrown types size not matched"
             );
-            Preconditions.checkState(
-                    type.getTypeVariables().size() == type.getJavaType().getTypeVariables().size(),
-                    "Type variables size not matched"
-            );
+            // Preconditions.checkState(
+            //         type.getTypeVariables().size() == type.getJavaType().getTypeVariables().size(),
+            //         "Type variables size not matched"
+            // );
 
             return type;
         }

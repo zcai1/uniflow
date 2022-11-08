@@ -4,13 +4,7 @@ import org.cfginference.core.model.qualifier.Qualifier;
 
 public abstract class PrimaryQualifiedType<Q extends Qualifier> extends QualifiedType<Q> {
 
-    @Override
     public abstract Q getQualifier();
-
-    @Override
-    public final boolean hasQualifier() {
-        return true;
-    }
 
     @Override
     public abstract PrimaryQualifiedType.Builder<Q> toBuilder();

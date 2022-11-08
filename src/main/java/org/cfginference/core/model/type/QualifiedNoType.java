@@ -2,7 +2,7 @@ package org.cfginference.core.model.type;
 
 import com.google.auto.value.AutoValue;
 import org.cfginference.core.model.qualifier.Qualifier;
-import org.checkerframework.checker.nullness.qual.Nullable;
+import org.cfginference.core.model.util.QualifiedTypeVisitor;
 
 import javax.lang.model.type.NoType;
 

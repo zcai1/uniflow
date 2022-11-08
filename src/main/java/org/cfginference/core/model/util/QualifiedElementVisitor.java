@@ -1,16 +1,13 @@
-package org.cfginference.core.model.element;
+package org.cfginference.core.model.util;
 
+import org.cfginference.core.model.element.QualifiedExecutableElement;
+import org.cfginference.core.model.element.QualifiedRecordComponentElement;
+import org.cfginference.core.model.element.QualifiedTypeElement;
+import org.cfginference.core.model.element.QualifiedTypeParameterElement;
+import org.cfginference.core.model.element.QualifiedVariableElement;
 import org.cfginference.core.model.qualifier.Qualifier;
 
 public interface QualifiedElementVisitor<Q extends Qualifier, R, P> {
-    default R visit(QualifiedElement<Q> element) {
-        return visit(element, null);
-    }
-
-    default R visit(QualifiedElement<Q> element, P p) {
-        return element.accept(this, p);
-    }
-
     R visitExecutable(QualifiedExecutableElement<Q> element, P p);
 
     R visitRecordComponent(QualifiedRecordComponentElement<Q> element, P p);

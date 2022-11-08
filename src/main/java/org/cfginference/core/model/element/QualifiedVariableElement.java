@@ -3,6 +3,7 @@ package org.cfginference.core.model.element;
 import com.google.auto.value.AutoValue;
 import org.cfginference.core.model.qualifier.Qualifier;
 import org.cfginference.core.model.type.QualifiedType;
+import org.cfginference.core.model.util.QualifiedElementVisitor;
 
 import javax.lang.model.element.VariableElement;
 

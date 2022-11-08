@@ -1,19 +1,12 @@
 package org.cfginference.core.model.element;
 
 import org.cfginference.core.model.qualifier.Qualifier;
+import org.cfginference.core.model.util.QualifiedElementVisitor;
 
 import javax.lang.model.element.Element;
 import javax.lang.model.element.ElementKind;
 
 public abstract class QualifiedElement<Q extends Qualifier> {
-
-    public Q getQualifier() {
-        throw new UnsupportedOperationException("No primary qualifier for " + this.getClass().getSimpleName());
-    }
-
-    public final boolean hasQualifier() {
-        return false;
-    }
 
     public abstract Element getJavaElement();
 

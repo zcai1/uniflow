@@ -4,6 +4,7 @@ import com.google.auto.value.AutoValue;
 import com.google.common.base.Preconditions;
 import com.google.common.collect.ImmutableList;
 import org.cfginference.core.model.qualifier.Qualifier;
+import org.cfginference.core.model.util.QualifiedTypeVisitor;
 
 import javax.lang.model.type.IntersectionType;
 

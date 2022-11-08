@@ -4,7 +4,6 @@ import org.cfginference.core.model.qualifier.Qualifier;
 
 public abstract class PrimaryQualifiedElement<Q extends Qualifier> extends QualifiedElement<Q> {
 
-    @Override
     public abstract Q getQualifier();
 
     @Override

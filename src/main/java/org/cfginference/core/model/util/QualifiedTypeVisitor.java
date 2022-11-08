@@ -1,16 +1,18 @@
-package org.cfginference.core.model.type;
+package org.cfginference.core.model.util;
 
 import org.cfginference.core.model.qualifier.Qualifier;
+import org.cfginference.core.model.type.QualifiedArrayType;
+import org.cfginference.core.model.type.QualifiedDeclaredType;
+import org.cfginference.core.model.type.QualifiedExecutableType;
+import org.cfginference.core.model.type.QualifiedIntersectionType;
+import org.cfginference.core.model.type.QualifiedNoType;
+import org.cfginference.core.model.type.QualifiedNullType;
+import org.cfginference.core.model.type.QualifiedPrimitiveType;
+import org.cfginference.core.model.type.QualifiedTypeVariable;
+import org.cfginference.core.model.type.QualifiedUnionType;
+import org.cfginference.core.model.type.QualifiedWildcardType;
 
 public interface QualifiedTypeVisitor<Q extends Qualifier, R, P> {
-    default R visit(QualifiedType<Q> type) {
-        return visit(type, null);
-    }
-
-    default R visit(QualifiedType<Q> type, P p) {
-        return type.accept(this, p);
-    }
-
     R visitArray(QualifiedArrayType<Q> type, P p);
 
     R visitDeclared(QualifiedDeclaredType<Q> type, P p);

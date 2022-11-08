@@ -5,7 +5,7 @@ import com.google.common.base.Preconditions;
 import com.google.common.collect.ImmutableList;
 import org.cfginference.core.model.type.QualifiedType;
 import org.cfginference.core.model.qualifier.Qualifier;
-import org.checkerframework.checker.nullness.qual.Nullable;
+import org.cfginference.core.model.util.QualifiedElementVisitor;
 
 import javax.lang.model.element.ExecutableElement;
 
@@ -21,6 +21,12 @@ public abstract class QualifiedExecutableElement<Q extends Qualifier> extends Qu
 
     public abstract ImmutableList<QualifiedType<Q>> getThrownTypes();
 
+    /**
+     * Unlike the definition of {@link ExecutableElement#getReturnType()}, this may return the type
+     * being instantiated if it's a constructor.
+     *
+     * @return the return type of this executable, or the type being instantiated if it's a constructor
+     */
     public abstract QualifiedType<Q> getReturnType();
 
     public abstract QualifiedType<Q> getReceiverType();
@@ -88,10 +94,6 @@ public abstract class QualifiedExecutableElement<Q extends Qualifier> extends Qu
         public final QualifiedExecutableElement<Q> build() {
             QualifiedExecutableElement<Q> element = autoBuild();
             ExecutableElement rawElement = element.getJavaElement();
-            Preconditions.checkState(
-                    element.getQualifier() == null,
-                    "No primary qualifier for executable element"
-            );
             Preconditions.checkState(
                     rawElement.getParameters().size() == element.getParameters().size(),
                     "Parameters not matched"
