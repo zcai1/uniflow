@@ -54,6 +54,12 @@ public abstract class QualifiedTypeElement<Q extends Qualifier> extends PrimaryQ
 
         public abstract ImmutableList.Builder<QualifiedRecordComponentElement<Q>> recordComponentsBuilder();
 
+        public abstract Builder<Q> setInterfaces(Iterable<QualifiedType<Q>> qualifiedInterfaces);
+
+        public abstract Builder<Q> setTypeParameters(Iterable<QualifiedTypeParameterElement<Q>> typeParameters);
+
+        public abstract Builder<Q> setRecordComponents(Iterable<QualifiedRecordComponentElement<Q>> recordComponents);
+
         public final Builder<Q> addInterface(QualifiedType<Q> qualifiedInterface) {
             interfacesBuilder().add(qualifiedInterface);
             return this;

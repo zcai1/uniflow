@@ -47,6 +47,8 @@ public abstract class QualifiedDeclaredType<Q extends Qualifier> extends Primary
 
         public abstract ImmutableList.Builder<QualifiedType<Q>> typeArgumentsBuilder();
 
+        public abstract Builder<Q> setTypeArguments(Iterable<QualifiedType<Q>> typeArguments);
+
         public final Builder<Q> addTypeArgument(QualifiedType<Q> typeArgument) {
             typeArgumentsBuilder().add(typeArgument);
             return this;

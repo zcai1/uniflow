@@ -47,7 +47,7 @@ public abstract class QualifiedWildcardType<Q extends Qualifier> extends Primary
 
         public abstract Builder<Q> setExtendsBound(QualifiedType<Q> extendsBound);
 
-        public abstract Builder<Q> setSuperBound(QualifiedType<Q> superBound);
+        public abstract Builder<Q> setSuperBound(@Nullable QualifiedType<Q> superBound);
 
         @Override
         public abstract QualifiedWildcardType<Q> build();

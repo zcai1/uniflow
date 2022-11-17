@@ -58,6 +58,12 @@ public abstract class QualifiedExecutableElement<Q extends Qualifier> extends Qu
 
         public abstract ImmutableList.Builder<QualifiedType<Q>> thrownTypesBuilder();
 
+        public abstract Builder<Q> setTypeParameters(Iterable<QualifiedTypeParameterElement<Q>> typeParameters);
+
+        public abstract Builder<Q> setParameters(Iterable<QualifiedVariableElement<Q>> parameters);
+
+        public abstract Builder<Q> setThrownTypes(Iterable<QualifiedType<Q>> thrownTypes);
+
         public final Builder<Q> addTypeParameter(QualifiedTypeParameterElement<Q> typeParameter) {
             typeParametersBuilder().add(typeParameter);
             return this;

@@ -1,0 +1,36 @@
+package org.cfginference.core.model.location;
+
+// See JLS 4.11
+public enum TypeContext {
+
+    CLASS_EXTENDS_OR_IMPLEMENTS(Kind.DECLARATION),
+    INTERFACE_EXTENDS(Kind.DECLARATION),
+    METHOD_RETURN(Kind.DECLARATION),
+    THROWS_CLAUSE(Kind.DECLARATION),
+    TYPE_PARAM_EXTENDS(Kind.DECLARATION),
+    FIELD(Kind.DECLARATION),
+    PARAMETER(Kind.DECLARATION),
+    METHOD_RECEIVER(Kind.DECLARATION),
+    LOCAL_VARIABLE(Kind.DECLARATION),
+    EXCEPTION_PARAM(Kind.DECLARATION),
+    RECORD_COMPONENT(Kind.DECLARATION),
+
+    TYPE_ARGUMENT(Kind.EXPRESSION),
+    NEW_ARRAY(Kind.EXPRESSION),
+    NEW_CLASS(Kind.EXPRESSION),
+    CAST(Kind.EXPRESSION),
+    INSTANCE_OF(Kind.EXPRESSION),
+    METHOD_REFERENCE(Kind.EXPRESSION)
+    ;
+
+
+    public final Kind kind;
+
+    TypeContext(Kind kind) {
+        this.kind = kind;
+    }
+
+    public enum Kind {
+        DECLARATION, EXPRESSION
+    }
+}

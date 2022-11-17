@@ -6,6 +6,7 @@ import org.cfginference.core.model.util.QualifiedTypeVisitor;
 
 import javax.lang.model.type.TypeVariable;
 
+// TODO: Recursive type is difficult to achieve with AutoValue, so we may need to implement this
 @AutoValue
 public abstract class QualifiedTypeVariable<Q extends Qualifier> extends PrimaryQualifiedType<Q> {
     @Override

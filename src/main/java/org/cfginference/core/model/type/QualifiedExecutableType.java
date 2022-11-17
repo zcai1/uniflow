@@ -60,6 +60,8 @@ public abstract class QualifiedExecutableType<Q extends Qualifier> extends Quali
 
         public abstract ImmutableList.Builder<QualifiedType<Q>> parameterTypesBuilder();
 
+        public abstract Builder<Q> setParameterTypes(Iterable<QualifiedType<Q>> parameterTypes);
+
         public final Builder<Q> addParameterType(QualifiedType<Q> parameterType) {
             parameterTypesBuilder().add(parameterType);
             return this;
@@ -71,6 +73,8 @@ public abstract class QualifiedExecutableType<Q extends Qualifier> extends Quali
         }
 
         public abstract ImmutableList.Builder<QualifiedType<Q>> thrownTypesBuilder();
+
+        public abstract Builder<Q> setThrownTypes(Iterable<QualifiedType<Q>> thrownTypes);
 
         public final Builder<Q> addThrownType(QualifiedType<Q> thrownType) {
             thrownTypesBuilder().add(thrownType);

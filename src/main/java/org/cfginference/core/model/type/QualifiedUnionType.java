@@ -41,6 +41,8 @@ public abstract class QualifiedUnionType<Q extends Qualifier> extends PrimaryQua
 
         public abstract ImmutableList.Builder<QualifiedType<Q>> alternativesBuilder();
 
+        public abstract Builder<Q> setAlternatives(Iterable<QualifiedType<Q>> alternatives);
+
         public final Builder<Q> addAlternative(QualifiedType<Q> alternative) {
             alternativesBuilder().add(alternative);
             return this;

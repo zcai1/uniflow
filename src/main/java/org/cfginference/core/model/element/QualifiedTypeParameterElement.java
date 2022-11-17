@@ -42,6 +42,8 @@ public abstract class QualifiedTypeParameterElement<Q extends Qualifier> extends
 
         public abstract ImmutableList.Builder<QualifiedType<Q>> boundsBuilder();
 
+        public abstract Builder<Q> setBounds(Iterable<QualifiedType<Q>> bounds);
+
         public final Builder<Q> addBound(QualifiedType<Q> bound) {
             boundsBuilder().add(bound);
             return this;

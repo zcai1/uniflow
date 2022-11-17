@@ -41,6 +41,8 @@ public abstract class QualifiedIntersectionType<Q extends Qualifier> extends Pri
 
         public abstract ImmutableList.Builder<QualifiedType<Q>> boundsBuilder();
 
+        public abstract Builder<Q> setBounds(Iterable<QualifiedType<Q>> bounds);
+
         public final Builder<Q> addBound(QualifiedType<Q> bound) {
             boundsBuilder().add(bound);
             return this;

@@ -13,12 +13,8 @@ public abstract class Slot implements Qualifier {
 
     public abstract int getId();
 
-    public boolean isInsertable() {
-        return false;
-    }
-
     @Override
-    public final AnnotationMirror toAnnotation(Elements elements) {
+    public AnnotationMirror toAnnotation(Elements elements) {
         return AnnotationBuilder.fromName(
                 elements,
                 VAR_ANNOT_NAME,
