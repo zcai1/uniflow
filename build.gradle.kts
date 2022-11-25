@@ -1,12 +1,18 @@
 import org.jetbrains.gradle.ext.compiler
 import org.jetbrains.gradle.ext.settings
+import org.checkerframework.gradle.plugin.CheckerFrameworkExtension
 
 plugins {
     id("java")
+    id("checkstyle")
     id("com.diffplug.spotless") version Versions.SPOTLESS
     id("org.jetbrains.gradle.plugin.idea-ext") version Versions.IDEA_EXT
     id("com.github.johnrengelman.shadow") version Versions.SHADOW
+    id("org.checkerframework") version Versions.CF_PLUGIN
 }
+
+
+apply(plugin = "org.checkerframework")
 
 group = "org.cfginference"
 version = "1.0-SNAPSHOT"
@@ -39,7 +45,11 @@ repositories {
 dependencies {
     implementation("io.github.eisop:javacutil:${Versions.CHECKER_FRAMEWORK}")
     implementation("io.github.eisop:dataflow:${Versions.CHECKER_FRAMEWORK}")
-    implementation("com.google.guava:guava:${Versions.GUAVA}")
+    implementation("io.github.eisop:checker-qual:${Versions.CHECKER_FRAMEWORK}")
+
+    implementation("com.google.guava:guava:${Versions.GUAVA}") {
+        exclude(group = "org.checkerframework", module = "checker-qual")
+    }
 
     annotationProcessor("com.google.auto.value:auto-value:${Versions.AUTO_VALUE}")
     compileOnly("com.google.auto.value:auto-value-annotations:${Versions.AUTO_VALUE}")
@@ -48,6 +58,10 @@ dependencies {
     compileOnly("com.google.auto.service:auto-service-annotations:${Versions.AUTO_SERVICE}")
 
     implementation("com.beust:jcommander:${Versions.JCOMMANDER}")
+
+    implementation("ch.qos.logback:logback-core:${Versions.LOGBACK}")
+    implementation("ch.qos.logback:logback-classic:${Versions.LOGBACK}")
+    implementation("org.slf4j:slf4j-api:${Versions.SLF4J}")
 
     // AFU is an "includedBuild" imported in settings.gradle.kts, so the version number doesn"t matter.
     // https://docs.gradle.org/current/userguide/composite_builds.html#settings_defined_composite
@@ -100,6 +114,7 @@ idea.project.settings {
     }
 }
 
+// NOTE: make sure to run spotless under java 17 or later
 spotless {
     format("misc") {
         // define the files to apply `misc` to
@@ -110,16 +125,32 @@ spotless {
         endWithNewline()
     }
     java {
-        importOrder()
-        removeUnusedImports()
-        googleJavaFormat(Versions.GOOGLE_JAVA_FORMAT).reflowLongStrings()
-
-        val regex = Regex("import\\s+[^\\*\\s]+\\.\\*;(\\r\\n|\\r|\\n)")
-        custom("No wildcard imports") { raw ->
-            assert(!raw.matches(regex))
-            raw
-        }
+        googleJavaFormat(Versions.GOOGLE_JAVA_FORMAT).aosp().reflowLongStrings()
+        importOrder("com", "jdk", "lib", "org", "java", "javax")
     }
+}
+
+checkstyle {
+    toolVersion = Versions.CHECKSTYLE
+}
+
+tasks.withType<Checkstyle> {
+    reports {
+        // disable reporting to files
+        xml.required.set(false)
+        html.required.set(false)
+    }
+}
+
+configure<CheckerFrameworkExtension> {
+    excludeTests = true
+    // temporarily disable
+    checkers = listOf(
+//        "org.checkerframework.checker.nullness.NullnessChecker"
+    )
+    extraJavacArgs = listOf(
+        "-AskipDefs=^.*AutoValue_.*$" // don't check generated AutoValues
+    )
 }
 
 tasks.test {
