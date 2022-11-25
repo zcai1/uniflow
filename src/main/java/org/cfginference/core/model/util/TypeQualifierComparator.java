@@ -27,6 +27,11 @@ public class TypeQualifierComparator<Q extends Qualifier> extends DoubleQualifie
         return r && scan(types1, types2);
     }
 
+    @Override
+    public final Boolean reduce(Boolean r1, Boolean r2) {
+        throw new UnsupportedOperationException();
+    }
+
     protected boolean areSameQualifier(Q q1, Q q2) {
         return q1.equals(q2);
     }

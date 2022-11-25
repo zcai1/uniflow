@@ -70,13 +70,14 @@ public class SlotLocator implements EventListener {
 
     public SlotLocator(Context context) {
         implicitLocationLocator = new ImplicitLocationLocator();
+        // TODO: this cannot receive events fired before initialization
         EventManager.instance(context).register(this);
     }
 
     @Override
     public void started(Event e) {
-        if (e instanceof Event.VisitNewRoot newRootEvent) {
-            currentRoot = newRootEvent.root();
+        if (e instanceof Event.NewAnalysisTask newAnalysisTask) {
+            currentRoot = newAnalysisTask.root();
         }
     }
 

@@ -34,7 +34,7 @@ public class QualifiedTypeScanner<Q extends Qualifier, R, P> implements Qualifie
         return DEFAULT_VALUE;
     }
 
-    protected R scan(QualifiedType<Q> type, P p) {
+    public R scan(QualifiedType<Q> type, P p) {
         return (type == null) ? null : type.accept(this, p);
     }
 

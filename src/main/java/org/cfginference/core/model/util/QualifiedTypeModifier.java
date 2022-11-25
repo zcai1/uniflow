@@ -21,13 +21,12 @@ import java.util.List;
 public abstract class QualifiedTypeModifier<Q1 extends Qualifier, Q2 extends Qualifier, P>
         implements QualifiedTypeVisitor<Q1, QualifiedType<Q2>, P> {
 
-    @SuppressWarnings("unchecked")
-    public <T1 extends QualifiedType<Q1>, T2 extends QualifiedType<Q2>> @PolyNull T2 visit(@PolyNull T1 type, P p) {
-        return (type == null) ? null : (T2) type.accept(this, p);
+    public QualifiedType<Q2> visit(QualifiedType<Q1> type, P p) {
+        return (type == null) ? null : type.accept(this, p);
     }
 
-    public <T1 extends QualifiedType<Q1>, T2 extends QualifiedType<Q2>> List<T2> visit(List<T1> types, P p) {
-        return types.stream().map(t -> this.<T1, T2>visit(t, p)).toList();
+    public List<QualifiedType<Q2>> visit(List<? extends QualifiedType<Q1>> types, P p) {
+        return types.stream().map(t -> this.visit(t, p)).toList();
     }
 
     protected abstract Q2 defaultAction(PrimaryQualifiedType<Q1> type, P p);
