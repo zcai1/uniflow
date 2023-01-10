@@ -1,10 +1,14 @@
 package org.cfginference.core.typesystem;
 
+import com.google.common.collect.SetMultimap;
+import org.cfginference.core.model.constraint.Constraint;
 import org.cfginference.core.model.slot.ProductSlot;
-import org.cfginference.core.model.slot.Slot;
 import org.cfginference.core.model.type.QualifiedType;
 
+import java.util.Set;
+
 public interface TypeHierarchy {
-    // only allow for S = ProductSlot | Slot?
-    <S extends Slot> QualifiedType<S> leastUpperBound(QualifiedType<S> type1, QualifiedType<S> type2);
+
+    SetMultimap<QualifierHierarchy, Constraint> getSubtypeConstraints(
+            QualifiedType<ProductSlot> subType, QualifiedType<ProductSlot> superType);
 }

@@ -8,5 +8,11 @@ public interface TypeSystem {
 
     Set<QualifierHierarchy> getQualifierHierarchies();
 
-    void getTypeChecker();
+    TypeHierarchy getTypeHierarchy();
+
+    TypeChecker getTypeChecker();
+
+    DeclarationTypeResolver getDeclarationTypeResolver();
+
+    NodeTypeResolver getNodeTypeResolver();
 }
