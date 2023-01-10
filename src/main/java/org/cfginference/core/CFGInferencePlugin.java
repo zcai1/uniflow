@@ -17,6 +17,7 @@ import com.sun.tools.javac.main.JavaCompiler;
 import com.sun.tools.javac.util.Context;
 import org.cfginference.core.event.Event;
 import org.cfginference.core.event.EventManager;
+import org.cfginference.core.flow.EnterAnalysis;
 import org.cfginference.core.model.reporting.PluginError;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -37,9 +38,9 @@ public final class CFGInferencePlugin implements Plugin, TaskListener {
 
     private PluginOptions options;
 
-    private AbstractInferenceProcessor processor;
-
     private EventManager eventManager;
+
+    private EnterAnalysis entryPoint;
 
     /**
      * Whether this {@link TaskListener} has received a {@link TaskEvent.Kind#ANALYZE} event
@@ -81,8 +82,7 @@ public final class CFGInferencePlugin implements Plugin, TaskListener {
         } else {
             validateOptions(options);
             setLogLevel(options.getLogLevel());
-            // TODO: postpone processor init to first important event, no heavy-weight init in this method
-            processor = initProcessor(options, context);
+            entryPoint = EnterAnalysis.instance(context);
             task.addTaskListener(this);
         }
     }
@@ -107,7 +107,6 @@ public final class CFGInferencePlugin implements Plugin, TaskListener {
     public void finished(TaskEvent e) {
         if (e.getKind() == TaskEvent.Kind.COMPILATION) {
             // compilation finished
-            processor.postProcessing();
             eventManager.broadcast(Event.SimpleEvent.FULL_ANALYSIS, false);
             return;
         } else if (e.getKind() != TaskEvent.Kind.ANALYZE) {
@@ -115,7 +114,6 @@ public final class CFGInferencePlugin implements Plugin, TaskListener {
         }
 
         if (!hasProcessingStarted) {
-            processor.preProcessing();
             eventManager.broadcast(Event.SimpleEvent.FULL_ANALYSIS, true);
             hasProcessingStarted = true;
         }
@@ -125,13 +123,14 @@ public final class CFGInferencePlugin implements Plugin, TaskListener {
         Verify.verifyNotNull(e.getCompilationUnit());
         TreePath path = Trees.instance(javacTask).getPath(element);
 
-        processor.process(element, path);
+        entryPoint.enter(path);
     }
 
     private static void validateOptions(PluginOptions options) {
         Verify.verify(options.getCacheSize() >= PluginOptions.CACHE_SIZE_MIN,
                 "Minimum cache size is %s",
                 PluginOptions.CACHE_SIZE_MIN);
+
         Verify.verify(options.getFlowDotDir() == null || !options.getFlowDotDir().isEmpty(),
                 "Flowdotdir should never be empty");
     }
