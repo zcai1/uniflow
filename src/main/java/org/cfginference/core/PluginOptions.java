@@ -7,10 +7,17 @@ import com.sun.tools.javac.util.Context;
 import java.util.ArrayList;
 import java.util.List;
 
+@SuppressWarnings("initialization")
 public final class PluginOptions {
 
+    public static final int CACHE_SIZE_MIN = 300;
+
     public enum Mode {
-        TYPE_CHECK, INFERENCE
+        TYPE_CHECK, INFERENCE;
+
+        public boolean isInference() {
+            return this == INFERENCE;
+        }
     }
 
     public enum LogLevel {
@@ -50,11 +57,11 @@ public final class PluginOptions {
     @Parameter(names={"-ts", "--type-system"},
             description="Set type systems to run.",
             variableArity = true)
-    private List<TypeSystems.Alias> typeSystems = new ArrayList<>();
+    private List<TypeSystems.Name> typeSystems = new ArrayList<>();
 
     @Parameter(names={"--cache-size"},
             description="Set internal cache size")
-    private int cacheSize = 300;
+    private int cacheSize = CACHE_SIZE_MIN;
 
     @Parameter(names={"--log-level"},
             description="Set log level")
@@ -64,13 +71,25 @@ public final class PluginOptions {
             description="Plugin mode")
     private Mode mode = Mode.INFERENCE;
 
-    @Parameter(names={"-ae", "--assertionEnabled"},
+    @Parameter(names={"-ae", "--assertion-enabled"},
             description="Whether process assertions in the source code or not")
     private boolean assertionEnabled = false;
 
-    @Parameter(names={"-seq", "--sequentialSemantics"},
+    @Parameter(names={"-seq", "--sequential-semantics"},
             description="Whether to assume a single-threaded runtime")
     private boolean sequentialSemantics = true;
+
+    @Parameter(names = {"--flowdotdir"},
+        description = "Directory to place type resolution visualization")
+    private String flowDotDir;
+
+    @Parameter(names = {"--verbose-cfg"},
+            description = "Directory to place type resolution visualization")
+    private boolean verboseCfg = false;
+
+    @Parameter(names = {"--invariant-array"},
+            description = "Should make array component types invariant")
+    private boolean invariantArrays = false;
 
     private PluginOptions(Context context) {
         context.put(PluginOptions.class, this);
@@ -109,11 +128,23 @@ public final class PluginOptions {
         return sequentialSemantics;
     }
 
-    public List<TypeSystems.Alias> getTypeSystems() {
+    public List<TypeSystems.Name> getTypeSystems() {
         return typeSystems;
     }
 
     public int getCacheSize() {
         return cacheSize;
+    }
+
+    public String getFlowDotDir() {
+        return flowDotDir;
+    }
+
+    public boolean isVerboseCfg() {
+        return verboseCfg;
+    }
+
+    public boolean isInvariantArrays() {
+        return invariantArrays;
     }
 }
