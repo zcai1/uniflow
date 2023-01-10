@@ -1,7 +1,14 @@
-package org.cfginference.core.flow;
+package org.cfginference.util;
 
 import com.google.common.base.Verify;
+import com.google.common.collect.ArrayListMultimap;
+import com.google.common.collect.Sets;
 import com.sun.tools.javac.util.Context;
+import org.cfginference.core.flow.SlotQualifierHierarchy;
+import org.cfginference.core.model.constraint.AlwaysTrueConstraint;
+import org.cfginference.core.model.constraint.Constraint;
+import org.cfginference.core.model.element.PrimaryQualifiedElement;
+import org.cfginference.core.model.element.QualifiedElement;
 import org.cfginference.core.model.slot.ProductSlot;
 import org.cfginference.core.model.slot.Slot;
 import org.cfginference.core.model.slot.SlotManager;
@@ -13,16 +20,22 @@ import org.cfginference.core.model.type.QualifiedNullType;
 import org.cfginference.core.model.type.QualifiedPrimitiveType;
 import org.cfginference.core.model.type.QualifiedType;
 import org.cfginference.core.model.type.QualifiedUnionType;
+import org.cfginference.core.model.util.QualifiedElementCombiner;
 import org.cfginference.core.model.util.QualifiedTypeCombiner;
 import org.cfginference.core.model.util.QualifiedTypeModifier;
 import org.cfginference.core.model.util.QualifiedTypeScanner;
 import org.cfginference.core.typesystem.QualifierHierarchy;
+import org.checkerframework.checker.nullness.qual.Nullable;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
+import javax.lang.model.type.TypeMirror;
+import java.util.Collection;
 import java.util.Collections;
 import java.util.LinkedHashMap;
+import java.util.List;
 import java.util.Map;
+import java.util.Objects;
 import java.util.Set;
 
 public class ProductSlotUtils {
@@ -33,6 +46,13 @@ public class ProductSlotUtils {
     
     private ProductSlotUtils() {
         // utils class
+    }
+
+    public static QualifiedElement<ProductSlot> combine(Context context,
+                                                        QualifiedElement<ProductSlot> e1,
+                                                        QualifiedElement<ProductSlot> e2) {
+        ProductSlotElementCombiner combiner = ProductSlotElementCombiner.instance(context);
+        return combiner.visit(e1, e2);
     }
 
     // Simple traverses two types of the same structure and merge each ProductSlot it encounters
@@ -52,10 +72,13 @@ public class ProductSlotUtils {
                                                      QualifiedType<ProductSlot> newType,
                                                      Set<QualifierHierarchy> forHierarchies) {
         ProductSlotReplacer replacer = ProductSlotReplacer.instance(context);
-        replacer.setQualifierHierarchies(forHierarchies);
-        QualifiedType<ProductSlot> result = replacer.visit(oldType, newType);
-        replacer.setQualifierHierarchies(Collections.emptySet());
-        return result;
+        try {
+            replacer.setQualifierHierarchies(forHierarchies);
+            QualifiedType<ProductSlot> result = replacer.visit(oldType, newType);
+            return result;
+        } finally {
+            replacer.setQualifierHierarchies(Collections.emptySet());
+        }
     }
 
     // Traverse the type and remove any slots related to the given hierarchies
@@ -66,8 +89,62 @@ public class ProductSlotUtils {
         return remover.visit(type, forHierarchies);
     }
 
+    public static QualifiedType<ProductSlot> refine(Context context,
+                                                    QualifiedType<ProductSlot> oldType,
+                                                    QualifiedType<ProductSlot> newType,
+                                                    IncomparableSlotResolver resolver) {
+        ProductSlotRefiner refiner = ProductSlotRefiner.instance(context);
+        try {
+            refiner.setResolver(resolver);
+            QualifiedType<ProductSlot> result = refiner.visit(oldType, newType);
+            return result;
+        } finally {
+            refiner.setResolver(null);
+        }
+    }
+
+    public static QualifiedType<ProductSlot> refine(Context context,
+                                                    QualifiedType<ProductSlot> oldType,
+                                                    QualifiedType<ProductSlot> newType) {
+        return refine(context, oldType, newType, IncomparableSlotResolver.ALWAYS_FIRST);
+    }
+
     public static boolean hasHierarchies(QualifiedType<ProductSlot> type, Set<QualifierHierarchy> hierarchies) {
         return hasHierarchiesChecker.scan(type, hierarchies);
+    }
+
+    public static boolean fromSameHierarchies(ProductSlot s1, ProductSlot p2) {
+        return Sets.symmetricDifference(s1.getSlots().keySet(), p2.getSlots().keySet())
+                .isEmpty();
+    }
+
+    public static ProductSlot mergePrimaries(Context context,
+                                             List<QualifiedType<ProductSlot>> types,
+                                             Set<QualifierHierarchy> forHierarchies,
+                                             boolean isLub) {
+        SlotQualifierHierarchy slotQualifierHierarchy = SlotQualifierHierarchy.instance(context);
+        SlotManager slotManager = SlotManager.instance(context);
+        ArrayListMultimap<QualifierHierarchy, Slot> typesByHierarchy = ArrayListMultimap.create();
+
+        // TODO: what if some/all types don't have primary qualifier?
+        for (QualifiedType<ProductSlot> type : types) {
+            if (type instanceof PrimaryQualifiedType<ProductSlot> pqType) {
+                for (QualifierHierarchy hierarchy : forHierarchies) {
+                    Slot slot = Objects.requireNonNull(pqType.getQualifier().getSlotByHierarchy(hierarchy));
+                    typesByHierarchy.put(hierarchy, slot);
+                }
+            }
+        }
+
+        Map<QualifierHierarchy, Slot> result = new LinkedHashMap<>();
+        for (QualifierHierarchy hierarchy : forHierarchies) {
+            List<Slot> slots = typesByHierarchy.get(hierarchy);
+            Slot mergedSlot = isLub
+                    ? slotQualifierHierarchy.leastUpperBound(slots)
+                    : slotQualifierHierarchy.greatestLowerBound(slots);
+            result.put(hierarchy, mergedSlot);
+        }
+        return slotManager.createProductSlot(result);
     }
 
     private static final class ProductSlotRemover
@@ -129,10 +206,10 @@ public class ProductSlotUtils {
         }
 
         @Override
-        protected ProductSlot defaultAction(PrimaryQualifiedType<ProductSlot> oldType,
-                                            PrimaryQualifiedType<ProductSlot> newType) {
-            Map<QualifierHierarchy, Slot> oldSlots = oldType.getQualifier().getSlots();
-            Map<QualifierHierarchy, Slot> newSlots = newType.getQualifier().getSlots();
+        protected ProductSlot getQualifier(PrimaryQualifiedType<ProductSlot> oldType,
+                                           PrimaryQualifiedType<ProductSlot> newType) {
+            Map<QualifierHierarchy, ? extends Slot> oldSlots = oldType.getQualifier().getSlots();
+            Map<QualifierHierarchy, ? extends Slot> newSlots = newType.getQualifier().getSlots();
             Map<QualifierHierarchy, Slot> result = new LinkedHashMap<>(oldSlots);
 
             for (QualifierHierarchy hierarchy : qualifierHierarchies) {
@@ -156,8 +233,11 @@ public class ProductSlotUtils {
 
         private final SlotManager slotManager;
 
+        private final SlotQualifierHierarchy slotQualifierHierarchy;
+
         private ProductSlotGlbResolver(Context context) {
             slotManager = SlotManager.instance(context);
+            slotQualifierHierarchy = SlotQualifierHierarchy.instance(context);
 
             context.put(ProductSlotGlbResolver.class, this);
         }
@@ -171,10 +251,10 @@ public class ProductSlotUtils {
         }
 
         @Override
-        protected ProductSlot defaultAction(PrimaryQualifiedType<ProductSlot> type1,
-                                            PrimaryQualifiedType<ProductSlot> type2) {
-            Map<QualifierHierarchy, Slot> slots1 = type1.getQualifier().getSlots();
-            Map<QualifierHierarchy, Slot> slots2 = type2.getQualifier().getSlots();
+        protected ProductSlot getQualifier(PrimaryQualifiedType<ProductSlot> type1,
+                                           PrimaryQualifiedType<ProductSlot> type2) {
+            Map<QualifierHierarchy, ? extends Slot> slots1 = type1.getQualifier().getSlots();
+            Map<QualifierHierarchy, ? extends Slot> slots2 = type2.getQualifier().getSlots();
             Verify.verify(
                     slots1.keySet().equals(slots2.keySet()),
                     """
@@ -187,11 +267,11 @@ public class ProductSlotUtils {
             );
 
             Map<QualifierHierarchy, Slot> glbSlots = new LinkedHashMap<>();
-            for (Map.Entry<QualifierHierarchy, Slot> e : slots1.entrySet()) {
+            for (Map.Entry<QualifierHierarchy, ? extends Slot> e : slots1.entrySet()) {
                 QualifierHierarchy hierarchy = e.getKey();
                 Slot s1 = e.getValue();
                 Slot s2 = slots2.get(hierarchy);
-                glbSlots.put(hierarchy, hierarchy.greatestLowerBound(s1, s2));
+                glbSlots.put(hierarchy, slotQualifierHierarchy.greatestLowerBound(s1, s2));
             }
             return slotManager.createProductSlot(glbSlots);
         }
@@ -202,8 +282,11 @@ public class ProductSlotUtils {
 
         private final SlotManager slotManager;
 
+        private final SlotQualifierHierarchy slotQualifierHierarchy;
+
         private ProductSlotLubResolver(Context context) {
             slotManager = SlotManager.instance(context);
+            slotQualifierHierarchy = SlotQualifierHierarchy.instance(context);
 
             context.put(ProductSlotLubResolver.class, this);
         }
@@ -217,10 +300,10 @@ public class ProductSlotUtils {
         }
 
         @Override
-        protected ProductSlot defaultAction(PrimaryQualifiedType<ProductSlot> type1,
-                                            PrimaryQualifiedType<ProductSlot> type2) {
-            Map<QualifierHierarchy, Slot> slots1 = type1.getQualifier().getSlots();
-            Map<QualifierHierarchy, Slot> slots2 = type2.getQualifier().getSlots();
+        protected ProductSlot getQualifier(PrimaryQualifiedType<ProductSlot> type1,
+                                           PrimaryQualifiedType<ProductSlot> type2) {
+            Map<QualifierHierarchy, ? extends Slot> slots1 = type1.getQualifier().getSlots();
+            Map<QualifierHierarchy, ? extends Slot> slots2 = type2.getQualifier().getSlots();
             Verify.verify(
                     slots1.keySet().equals(slots2.keySet()),
                     """
@@ -233,41 +316,40 @@ public class ProductSlotUtils {
             );
 
             Map<QualifierHierarchy, Slot> lubSlots = new LinkedHashMap<>();
-            for (Map.Entry<QualifierHierarchy, Slot> e : slots1.entrySet()) {
+            for (Map.Entry<QualifierHierarchy, ? extends Slot> e : slots1.entrySet()) {
                 QualifierHierarchy hierarchy = e.getKey();
                 Slot s1 = e.getValue();
                 Slot s2 = slots2.get(hierarchy);
-                lubSlots.put(hierarchy, hierarchy.leastUpperBound(s1, s2));
+                lubSlots.put(hierarchy, slotQualifierHierarchy.leastUpperBound(s1, s2));
             }
             return slotManager.createProductSlot(lubSlots);
         }
     }
 
-    @Deprecated
-    public static final class ProductSlotCombiner
+    private static final class ProductSlotTypeCombiner
             extends QualifiedTypeCombiner<ProductSlot, ProductSlot, ProductSlot> {
 
         private final SlotManager slotManager;
 
-        private ProductSlotCombiner(Context context) {
+        private ProductSlotTypeCombiner(Context context) {
             slotManager = SlotManager.instance(context);
 
-            context.put(ProductSlotCombiner.class, this);
+            context.put(ProductSlotTypeCombiner.class, this);
         }
 
-        public static ProductSlotCombiner instance(Context context) {
-            ProductSlotCombiner instance = context.get(ProductSlotCombiner.class);
+        public static ProductSlotTypeCombiner instance(Context context) {
+            ProductSlotTypeCombiner instance = context.get(ProductSlotTypeCombiner.class);
             if (instance == null) {
-                instance = new ProductSlotCombiner(context);
+                instance = new ProductSlotTypeCombiner(context);
             }
             return instance;
         }
 
         @Override
-        protected ProductSlot defaultAction(PrimaryQualifiedType<ProductSlot> type1,
-                                            PrimaryQualifiedType<ProductSlot> type2) {
-            Map<QualifierHierarchy, Slot> slots1 = type1.getQualifier().getSlots();
-            Map<QualifierHierarchy, Slot> slots2 = type2.getQualifier().getSlots();
+        protected ProductSlot getQualifier(PrimaryQualifiedType<ProductSlot> type1,
+                                           PrimaryQualifiedType<ProductSlot> type2) {
+            Map<QualifierHierarchy, ? extends Slot> slots1 = type1.getQualifier().getSlots();
+            Map<QualifierHierarchy, ? extends Slot> slots2 = type2.getQualifier().getSlots();
             Verify.verify(
                     Collections.disjoint(slots1.keySet(), slots2.keySet()),
                     """
@@ -279,9 +361,137 @@ public class ProductSlotUtils {
                     type2
             );
 
-            var combinedSlots = new LinkedHashMap<>(slots1);
+            LinkedHashMap<QualifierHierarchy, Slot> combinedSlots = new LinkedHashMap<>(slots1);
             combinedSlots.putAll(slots2);
             return slotManager.createProductSlot(combinedSlots);
+        }
+    }
+
+    private static final class ProductSlotElementCombiner
+            extends QualifiedElementCombiner<ProductSlot, ProductSlot, ProductSlot> {
+
+        private final SlotManager slotManager;
+
+        private final ProductSlotTypeCombiner typeCombiner;
+
+        private ProductSlotElementCombiner(Context context) {
+            slotManager = SlotManager.instance(context);
+            typeCombiner = ProductSlotTypeCombiner.instance(context);
+
+            context.put(ProductSlotElementCombiner.class, this);
+        }
+
+        public static ProductSlotElementCombiner instance(Context context) {
+            ProductSlotElementCombiner instance = context.get(ProductSlotElementCombiner.class);
+            if (instance == null) {
+                instance = new ProductSlotElementCombiner(context);
+            }
+            return instance;
+        }
+
+        @Override
+        protected ProductSlot getQualifier(PrimaryQualifiedElement<ProductSlot> element1,
+                                           PrimaryQualifiedElement<ProductSlot> element2) {
+            Map<QualifierHierarchy, ? extends Slot> slots1 = element1.getQualifier().getSlots();
+            Map<QualifierHierarchy, ? extends Slot> slots2 = element2.getQualifier().getSlots();
+            Verify.verify(
+                    Collections.disjoint(slots1.keySet(), slots2.keySet()),
+                    """
+                    Failed to combine two product slots because they are not disjoint,
+                    qualified element #1: %s,
+                    qualified element #2: %s
+                    """,
+                    element1,
+                    element2
+            );
+
+            LinkedHashMap<QualifierHierarchy, Slot> combinedSlots = new LinkedHashMap<>(slots1);
+            combinedSlots.putAll(slots2);
+            return slotManager.createProductSlot(combinedSlots);
+        }
+
+        @Override
+        protected QualifiedType<ProductSlot> getQualifiedType(QualifiedType<ProductSlot> type1,
+                                                              QualifiedType<ProductSlot> type2) {
+            return typeCombiner.visit(type1, type2);
+        }
+    }
+
+    public interface IncomparableSlotResolver {
+        IncomparableSlotResolver ALWAYS_FIRST = ((slot1, slot2, javaType) -> Objects.requireNonNull(slot1));
+        IncomparableSlotResolver ALWAYS_SECOND = ((slot1, slot2, javaType) -> Objects.requireNonNull(slot2));
+
+        Slot resolve(@Nullable Slot slot1, @Nullable Slot slot2, TypeMirror javaType);
+    }
+
+    private static final class ProductSlotRefiner
+            extends QualifiedTypeCombiner<ProductSlot, ProductSlot, ProductSlot> {
+
+        private IncomparableSlotResolver resolver;
+
+        private final SlotQualifierHierarchy slotQualifierHierarchy;
+
+        private final SlotManager slotManager;
+
+        private ProductSlotRefiner(Context context) {
+            slotManager = SlotManager.instance(context);
+            slotQualifierHierarchy = SlotQualifierHierarchy.instance(context);
+
+            context.put(ProductSlotRefiner.class, this);
+        }
+
+        public static ProductSlotRefiner instance(Context context) {
+            ProductSlotRefiner instance = context.get(ProductSlotRefiner.class);
+            if (instance == null) {
+                instance = new ProductSlotRefiner(context);
+            }
+            return instance;
+        }
+
+        public void setResolver(IncomparableSlotResolver resolver) {
+            this.resolver = resolver;
+        }
+
+        @Override
+        protected ProductSlot getQualifier(PrimaryQualifiedType<ProductSlot> type1,
+                                           PrimaryQualifiedType<ProductSlot> type2) {
+            Map<QualifierHierarchy, Slot> result = new LinkedHashMap<>();
+            for (Map.Entry<QualifierHierarchy, ? extends Slot> e : type1.getQualifier().getSlots().entrySet()) {
+                QualifierHierarchy hierarchy = e.getKey();
+                Slot slot1 = e.getValue();
+                Slot slot2 = type2.getQualifier().getSlots().get(hierarchy);
+                Slot moreSpecificSlot = moreSpecificOf(slot1, slot2);
+                if (moreSpecificSlot == null) {
+                    moreSpecificSlot = resolver.resolve(slot1, slot2, type1.getJavaType());
+                }
+                result.put(hierarchy, moreSpecificSlot);
+            }
+            for (var e : type2.getQualifier().getSlots().entrySet()) {
+                QualifierHierarchy hierarchy = e.getKey();
+                if (!type1.getQualifier().getSlots().containsKey(hierarchy)) {
+                    result.put(hierarchy, e.getValue());
+                }
+            }
+            return slotManager.createProductSlot(result);
+        }
+
+        private @Nullable Slot moreSpecificOf(@Nullable Slot s1, @Nullable Slot s2) {
+            if (s1 == null) {
+                return s2;
+            } else if (s2 == null) {
+                return s1;
+            }
+
+            Constraint subtypeConstraint = slotQualifierHierarchy.getSubtypeConstraint(s1, s2);
+            if (subtypeConstraint instanceof AlwaysTrueConstraint) {
+                return s1;
+            }
+
+            subtypeConstraint = slotQualifierHierarchy.getSubtypeConstraint(s2, s1);
+            if (subtypeConstraint instanceof AlwaysTrueConstraint) {
+                return s2;
+            }
+            return null;
         }
     }
 
@@ -309,7 +519,7 @@ public class ProductSlotUtils {
         }
 
         @Override
-        protected Boolean scanAndReduce(Iterable<? extends QualifiedType<ProductSlot>> qualifiedTypes, P p, Boolean r) {
+        protected Boolean scanAndReduce(Collection<? extends QualifiedType<ProductSlot>> qualifiedTypes, P p, Boolean r) {
             return r || scan(qualifiedTypes, p);
         }
 

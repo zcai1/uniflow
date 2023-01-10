@@ -1,7 +1,7 @@
 package org.cfginference.util;
 
 import com.sun.source.tree.Tree;
-import org.cfginference.core.model.location.AstPathLocation;
+import org.cfginference.core.model.location.ASTLocation;
 import org.cfginference.core.model.location.ClassDeclLocation;
 import org.cfginference.core.model.location.QualifierLocation;
 import org.checkerframework.javacutil.Pair;
@@ -63,6 +63,7 @@ public class JaifBuilder {
                        Set<? extends Class<? extends Annotation>> annotationMirrors) {
         this(locationToAnno, annotationMirrors, false);
     }
+
     public JaifBuilder(Map<QualifierLocation, String> locationToAnno,
                        Set<? extends Class<? extends Annotation>> annotationMirrors, boolean insertMethodBodies) {
         this.locationToAnno = locationToAnno;
@@ -294,9 +295,9 @@ public class JaifBuilder {
             String annotation = entry.getValue();
 
             // TODO: update to switch statement with type pattern matching
-            if (location instanceof AstPathLocation astLocation) {
+            if (location instanceof ASTLocation astLocation) {
                 ClassEntry classEntry = getClassEntry(astLocation);
-                ASTRecord astRecord = astLocation.astRecord();
+                ASTRecord astRecord = astLocation.getASTRecord();
 
                 MemberRecords memberRecords = classEntry.getMemberRecords(astRecord.methodName, astRecord.varName);
                 if (!insertMainModOfLocalVar && isMainModOfLocalVar(astRecord.astPath)) {
@@ -387,12 +388,12 @@ public class JaifBuilder {
         return entry.getTreeKind() == kind && entry.getChildSelector().equals(childSelector);
     }
 
-    private ClassEntry getClassEntry(AstPathLocation location) {
-        return getClassEntry(location.astRecord().className);
+    private ClassEntry getClassEntry(ASTLocation location) {
+        return getClassEntry(location.getASTRecord().className);
     }
 
     private ClassEntry getClassEntry(ClassDeclLocation location) {
-        return getClassEntry(location.fullyQualifiedClassName());
+        return getClassEntry(location.getFullyQualifiedClassName());
     }
 
     /**
@@ -404,7 +405,7 @@ public class JaifBuilder {
     private ClassEntry getClassEntry(String fullyQualified) {
         ClassEntry classEntry = this.classesMap.get(fullyQualified);
         if (classEntry == null) {
-            Pair<String, String> packageToClass = ASTPathUtil.splitFullyQualifiedClass(fullyQualified);
+            Pair<String, String> packageToClass = ASTPathUtils.splitFullyQualifiedClass(fullyQualified);
             classEntry = new ClassEntry(packageToClass.first, packageToClass.second);
             this.classesMap.put(fullyQualified, classEntry);
         }
