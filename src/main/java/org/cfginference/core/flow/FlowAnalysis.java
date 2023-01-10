@@ -1,29 +1,36 @@
 package org.cfginference.core.flow;
 
-import com.google.common.cache.CacheBuilder;
-import com.sun.jdi.Value;
 import com.sun.source.tree.Tree;
 import com.sun.tools.javac.util.Context;
 import org.cfginference.core.TypeSystems;
 import org.checkerframework.checker.nullness.qual.Nullable;
-import org.checkerframework.dataflow.analysis.Analysis;
 import org.checkerframework.dataflow.analysis.AnalysisResult;
 import org.checkerframework.dataflow.analysis.ForwardAnalysisImpl;
 import org.checkerframework.dataflow.analysis.TransferInput;
+import org.checkerframework.dataflow.analysis.TransferResult;
 import org.checkerframework.dataflow.cfg.block.Block;
 import org.checkerframework.dataflow.cfg.node.Node;
 
 import javax.lang.model.type.TypeMirror;
+import java.util.Collections;
+import java.util.IdentityHashMap;
+import java.util.Map;
 import java.util.Set;
 
 public final class FlowAnalysis extends ForwardAnalysisImpl<FlowValue, FlowStore, FlowTransfer> {
 
     private final FlowContext flowContext;
 
+    /**
+     * last node analyzed in the current block analysis
+     */
+    private @Nullable Node lastNode;
+
     private FlowAnalysis(Context context) {
         super(getMaxCountBeforeWidening(context));
         this.transferFunction = FlowTransfer.instance(context);
         this.flowContext = FlowContext.instance(context);
+        this.lastNode = null;
 
         context.put(FlowAnalysis.class, this);
     }
@@ -43,7 +50,35 @@ public final class FlowAnalysis extends ForwardAnalysisImpl<FlowValue, FlowStore
         return false;
     }
 
+    @Override
+    public IdentityHashMap<Node, FlowValue> getNodeValues() {
+        return new IdentityHashMap<>(super.getNodeValues());
+    }
+
+    @Override
+    public @Nullable FlowValue getValue(Node n) {
+        // copy of super.getValue(), but without the "assert !n.isLValue()" check.
+        if (isRunning) {
+            // we don't have a org.checkerframework.dataflow fact about the current node yet
+            if (currentNode == null
+                    || currentNode == n
+                    || (currentTree != null && currentTree == n.getTree())) {
+                return null;
+            }
+            if (!currentNode.getOperands().contains(n)
+                    && !currentNode.getTransitiveOperands().contains(n)) {
+                return null;
+            }
+            // fall through when the current node is not 'n', and 'n' is not a subnode.
+        }
+        return nodeValues.get(n);
+    }
+
     public @Nullable FlowStore getStoreBefore(Tree tree) {
+        if (isRunning()) {
+            return flowContext.getFlowResult().getStoreBefore(tree);
+        }
+
         Set<Node> nodes = getNodesForTree(tree);
         if (nodes != null) {
             return getStoreBefore(nodes);
@@ -51,7 +86,45 @@ public final class FlowAnalysis extends ForwardAnalysisImpl<FlowValue, FlowStore
         return null;
     }
 
-    public FlowStore getStoreBefore(Set<Node> nodes) {
+    @Override
+    public void performAnalysisBlock(Block b) {
+        try {
+            super.performAnalysisBlock(b);
+        } finally {
+            lastNode = null;
+        }
+    }
+
+    @Override
+    public FlowStore runAnalysisFor(Node node,
+                                    BeforeOrAfter preOrPost,
+                                    TransferInput<FlowValue, FlowStore> blockTransferInput,
+                                    IdentityHashMap<Node, FlowValue> nodeValues,
+                                    Map<TransferInput<FlowValue, FlowStore>, IdentityHashMap<Node, TransferResult<FlowValue, FlowStore>>> analysisCaches) {
+        try {
+            return super.runAnalysisFor(node, preOrPost, blockTransferInput, nodeValues, analysisCaches);
+        } finally {
+            lastNode = null;
+        }
+    }
+
+    @Nullable Node getCurrentNode() {
+        return currentNode;
+    }
+
+    @Nullable Node getLastNode() {
+        return lastNode;
+    }
+
+    @Override
+    protected void setCurrentNode(@Nullable Node currentNode) {
+        if (getCurrentNode() != null) {
+            lastNode = getCurrentNode();
+        }
+        super.setCurrentNode(currentNode);
+    }
+
+    private FlowStore getStoreBefore(Set<Node> nodes) {
         FlowStore merge = null;
         for (Node node : nodes) {
             FlowStore s = getStoreBefore(node);
@@ -64,7 +137,7 @@ public final class FlowAnalysis extends ForwardAnalysisImpl<FlowValue, FlowStore
         return merge;
     }
 
-    public FlowStore getStoreBefore(Node node) {
+    private FlowStore getStoreBefore(Node node) {
         Block block = node.getBlock();
         TransferInput<FlowValue, FlowStore> transferInput = getInput(block);
         if (transferInput == null) {
@@ -78,7 +151,6 @@ public final class FlowAnalysis extends ForwardAnalysisImpl<FlowValue, FlowStore
                 getNodeValues(),
                 flowContext.getAnalysisCaches());
     }
-
 
     // TODO: does this make sense?
     private static int getMaxCountBeforeWidening(Context context) {

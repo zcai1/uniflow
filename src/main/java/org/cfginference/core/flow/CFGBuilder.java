@@ -2,6 +2,7 @@ package org.cfginference.core.flow;
 
 import com.sun.source.tree.Tree;
 import com.sun.source.util.TreePath;
+import org.cfginference.util.AnnotationHelpers;
 import org.checkerframework.dataflow.cfg.ControlFlowGraph;
 import org.checkerframework.dataflow.cfg.UnderlyingAST;
 import org.checkerframework.dataflow.cfg.builder.CFGTranslationPhaseOne;
@@ -24,10 +25,9 @@ public class CFGBuilder extends org.checkerframework.dataflow.cfg.builder.CFGBui
             ProcessingEnvironment env,
             ArtificialTreeHandler artificialTreeHandler) {
         TreeBuilder builder = new TreeBuilder(env);
-        AnnotationProvider annotationProvider = new BasicAnnotationProvider();
-        var phase1 = new TranslationPhaseOne(
+        TranslationPhaseOne phase1 = new TranslationPhaseOne(
                 builder,
-                annotationProvider,
+                AnnotationHelpers.DEFAULT_ANNO_PROVIDER,
                 assumeAssertionsEnabled,
                 assumeAssertionsDisabled,
                 env,
