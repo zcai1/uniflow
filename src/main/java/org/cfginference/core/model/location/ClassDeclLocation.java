@@ -1,13 +1,11 @@
 package org.cfginference.core.model.location;
 
-import com.google.common.base.Preconditions;
+import com.google.auto.value.AutoValue;
 
-import java.util.Objects;
+@AutoValue
+public abstract class ClassDeclLocation implements QualifierLocation {
 
-public record ClassDeclLocation(String fullyQualifiedClassName) implements QualifierLocation {
-    public ClassDeclLocation {
-        Preconditions.checkNotNull(fullyQualifiedClassName);
-    }
+    public abstract String getFullyQualifiedClassName();
 
     @Override
     public boolean isInsertable() {

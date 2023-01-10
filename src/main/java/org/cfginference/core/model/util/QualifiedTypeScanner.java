@@ -13,6 +13,7 @@ import org.cfginference.core.model.type.QualifiedTypeVariable;
 import org.cfginference.core.model.type.QualifiedUnionType;
 import org.cfginference.core.model.type.QualifiedWildcardType;
 
+import java.util.Collection;
 import java.util.List;
 
 public class QualifiedTypeScanner<Q extends Qualifier, R, P> implements QualifiedTypeVisitor<Q, R, P> {
@@ -38,7 +39,7 @@ public class QualifiedTypeScanner<Q extends Qualifier, R, P> implements Qualifie
         return (type == null) ? null : type.accept(this, p);
     }
 
-    protected R scan(Iterable<? extends QualifiedType<Q>> types, P p) {
+    protected R scan(Collection<? extends QualifiedType<Q>> types, P p) {
         R r = DEFAULT_VALUE;
         if (types != null) {
             boolean first = true;
@@ -54,7 +55,7 @@ public class QualifiedTypeScanner<Q extends Qualifier, R, P> implements Qualifie
         return reduce(scan(type, p), r);
     }
 
-    protected R scanAndReduce(Iterable<? extends QualifiedType<Q>> types, P p, R r) {
+    protected R scanAndReduce(Collection<? extends QualifiedType<Q>> types, P p, R r) {
         return reduce(scan(types, p), r);
     }
 

@@ -1,36 +1,42 @@
 package org.cfginference.core.model.location;
 
+// Where is this TypeMirror used?
 // See JLS 4.11
 public enum TypeContext {
 
-    CLASS_EXTENDS_OR_IMPLEMENTS(Kind.DECLARATION),
-    INTERFACE_EXTENDS(Kind.DECLARATION),
-    METHOD_RETURN(Kind.DECLARATION),
-    THROWS_CLAUSE(Kind.DECLARATION),
-    TYPE_PARAM_EXTENDS(Kind.DECLARATION),
-    FIELD(Kind.DECLARATION),
-    PARAMETER(Kind.DECLARATION),
-    METHOD_RECEIVER(Kind.DECLARATION),
-    LOCAL_VARIABLE(Kind.DECLARATION),
-    EXCEPTION_PARAM(Kind.DECLARATION),
-    RECORD_COMPONENT(Kind.DECLARATION),
+    // look at scala
+    // defaults for field reads and writes
+    // for byte code elements, reading a field and writing to a field can be different
+    CLASS_EXTENDS_OR_IMPLEMENTS,
+    METHOD_RETURN,
+    THROWS_CLAUSE,
+    TYPE_PARAM_EXTENDS,
+    FIELD,
+    PARAMETER,
+    METHOD_RECEIVER,
+    LOCAL_VARIABLE,
+    EXCEPTION_PARAM,
+    RECORD_COMPONENT,
 
-    TYPE_ARGUMENT(Kind.EXPRESSION),
-    NEW_ARRAY(Kind.EXPRESSION),
-    NEW_CLASS(Kind.EXPRESSION),
-    CAST(Kind.EXPRESSION),
-    INSTANCE_OF(Kind.EXPRESSION),
-    METHOD_REFERENCE(Kind.EXPRESSION)
-    ;
+    TYPE_ARGUMENT,
+    NEW_ARRAY,
+    NEW_CLASS,
+    CAST,
+    INSTANCE_OF,
+    METHOD_REFERENCE,
+    EXPRESSION;
 
-
-    public final Kind kind;
-
-    TypeContext(Kind kind) {
-        this.kind = kind;
-    }
-
-    public enum Kind {
-        DECLARATION, EXPRESSION
+    enum NestingKind {
+        ARRAY_COMPONENT,
+        ENCLOSING_TYPE,
+        UPPER_BOUND,
+        LOWER_BOUND,
+        TYPE_ARGUMENT,
+        RETURN_TYPE,
+        PARAMETER_TYPE,
+        RECEIVER_TYPE,
+        THROWN_TYPE,
+        UNION_COMPONENT,
+        INTERSECTION_COMPONENT,
     }
 }

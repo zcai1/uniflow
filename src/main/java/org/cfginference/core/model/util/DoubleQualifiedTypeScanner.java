@@ -13,6 +13,7 @@ import org.cfginference.core.model.type.QualifiedTypeVariable;
 import org.cfginference.core.model.type.QualifiedUnionType;
 import org.cfginference.core.model.type.QualifiedWildcardType;
 
+import java.util.Collection;
 import java.util.Iterator;
 
 public abstract class DoubleQualifiedTypeScanner<Q1 extends Qualifier, Q2 extends Qualifier, R>
@@ -26,7 +27,7 @@ public abstract class DoubleQualifiedTypeScanner<Q1 extends Qualifier, Q2 extend
         super(defaultValue);
     }
 
-    protected R scan(Iterable<? extends QualifiedType<Q1>> types1, Iterable<? extends QualifiedType<Q2>> types2) {
+    protected R scan(Collection<? extends QualifiedType<Q1>> types1, Collection<? extends QualifiedType<Q2>> types2) {
         R r = DEFAULT_VALUE;
         if (types1 != null && types2 != null) {
             boolean first = true;
@@ -44,12 +45,14 @@ public abstract class DoubleQualifiedTypeScanner<Q1 extends Qualifier, Q2 extend
     }
 
     @Override
-    protected final R scanAndReduce(Iterable<? extends QualifiedType<Q1>> types, QualifiedType<Q2> type, R r) {
+    protected final R scanAndReduce(Collection<? extends QualifiedType<Q1>> types, QualifiedType<Q2> type, R r) {
         // unused
         throw new UnsupportedOperationException();
     }
 
-    protected R scanAndReduce(Iterable<? extends QualifiedType<Q1>> types1, Iterable<? extends QualifiedType<Q2>> types2, R r) {
+    protected R scanAndReduce(Collection<? extends QualifiedType<Q1>> types1,
+                              Collection<? extends QualifiedType<Q2>> types2,
+                              R r) {
         return reduce(scan(types1, types2), r);
     }
 

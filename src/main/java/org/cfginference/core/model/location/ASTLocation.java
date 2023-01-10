@@ -1,12 +1,10 @@
 package org.cfginference.core.model.location;
 
-import com.google.common.base.Preconditions;
+import com.google.auto.value.AutoValue;
 import scenelib.annotations.io.ASTRecord;
 
-public record ASTLocation(ASTRecord astRecord, boolean isInsertable) implements QualifierLocation {
-    public ASTLocation {
-        Preconditions.checkNotNull(astRecord);
-        // we don't retain any references to trees to prevent memory leaks
-        assert astRecord.ast == null;
-    }
+@AutoValue
+public abstract class ASTLocation implements QualifierLocation {
+
+    public abstract ASTRecord getASTRecord();
 }

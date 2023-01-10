@@ -7,8 +7,10 @@ import org.cfginference.core.model.element.QualifiedTypeElement;
 import org.cfginference.core.model.element.QualifiedTypeParameterElement;
 import org.cfginference.core.model.element.QualifiedVariableElement;
 import org.cfginference.core.model.qualifier.Qualifier;
-import org.cfginference.core.model.util.BaseQualifiedTypeBuilder;
+import org.cfginference.core.model.type.QualifiedType;
 
+import javax.lang.model.element.Element;
+import javax.lang.model.element.ElementVisitor;
 import javax.lang.model.element.ExecutableElement;
 import javax.lang.model.element.ModuleElement;
 import javax.lang.model.element.PackageElement;
@@ -16,14 +18,19 @@ import javax.lang.model.element.RecordComponentElement;
 import javax.lang.model.element.TypeElement;
 import javax.lang.model.element.TypeParameterElement;
 import javax.lang.model.element.VariableElement;
-import javax.lang.model.util.AbstractElementVisitor14;
+import javax.lang.model.type.TypeMirror;
+import java.util.List;
 
-public class BaseQualifiedElementBuilder<Q extends Qualifier, P> extends AbstractElementVisitor14<QualifiedElement<Q>, P> {
+public abstract class QualifiedElementBuilder<Q extends Qualifier, P>
+        implements ElementVisitor<QualifiedElement<Q>, P> {
 
-    protected final BaseQualifiedTypeBuilder<Q, P> typeBuilder;
+    protected abstract Q getQualifier(Element e, P p);
 
-    public BaseQualifiedElementBuilder(BaseQualifiedTypeBuilder<Q, P> typeBuilder) {
-        this.typeBuilder = typeBuilder;
+    protected abstract QualifiedType<Q> getQualifiedType(TypeMirror t, Element e, P p);
+
+    @Override
+    public QualifiedElement<Q> visit(Element e, P p) {
+        return e.accept(this, p);
     }
 
     @Override
@@ -34,8 +41,8 @@ public class BaseQualifiedElementBuilder<Q extends Qualifier, P> extends Abstrac
     protected QualifiedRecordComponentElement.Builder<Q> defaultBuilder(RecordComponentElement e, P p) {
         return QualifiedRecordComponentElement.<Q>builder()
                 .setJavaElement(e)
-                .setAccessor(visitExecutable(e.getAccessor(), p))
-                .setType(typeBuilder.visit(e.asType(), p));
+                .setAccessor((QualifiedExecutableElement<Q>) visit(e.getAccessor(), p))
+                .setType(getQualifiedType(e.asType(), e, p));
     }
 
     @Override
@@ -44,12 +51,20 @@ public class BaseQualifiedElementBuilder<Q extends Qualifier, P> extends Abstrac
     }
 
     protected QualifiedTypeElement.Builder<Q> defaultBuilder(TypeElement e, P p) {
+        List<QualifiedTypeParameterElement<Q>> typeParams = e.getTypeParameters().stream()
+                .map(tp -> (QualifiedTypeParameterElement<Q>) visit(tp, p))
+                .toList();
+        List<QualifiedRecordComponentElement<Q>> recordComponents = e.getRecordComponents().stream()
+                .map(rc -> (QualifiedRecordComponentElement<Q>) visit(rc, p))
+                .toList();
+
         return QualifiedTypeElement.<Q>builder()
                 .setJavaElement(e)
-                .setSuperClass(typeBuilder.visit(e.getSuperclass(), p))
-                .setInterfaces(e.getInterfaces().stream().map(i -> typeBuilder.visit(i, p)).toList())
-                .setTypeParameters(e.getTypeParameters().stream().map(tp -> visitTypeParameter(tp, p)).toList())
-                .setRecordComponents(e.getRecordComponents().stream().map(rc -> visitRecordComponent(rc, p)).toList());
+                .setSuperClass(getQualifiedType(e.getSuperclass(), e, p))
+                .setInterfaces(e.getInterfaces().stream().map(i -> getQualifiedType(i, e, p)).toList())
+                .setTypeParameters(typeParams)
+                .setRecordComponents(recordComponents)
+                .setQualifier(getQualifier(e, p));
     }
 
     @Override
@@ -60,7 +75,7 @@ public class BaseQualifiedElementBuilder<Q extends Qualifier, P> extends Abstrac
     protected QualifiedVariableElement.Builder<Q> defaultBuilder(VariableElement e, P p) {
         return QualifiedVariableElement.<Q>builder()
                 .setJavaElement(e)
-                .setType(typeBuilder.visit(e.asType(), p));
+                .setType(getQualifiedType(e.asType(), e, p));
     }
 
     @Override
@@ -69,13 +84,20 @@ public class BaseQualifiedElementBuilder<Q extends Qualifier, P> extends Abstrac
     }
 
     protected QualifiedExecutableElement.Builder<Q> defaultBuilder(ExecutableElement e, P p) {
+        List<QualifiedTypeParameterElement<Q>> typeParams = e.getTypeParameters().stream()
+                .map(tp -> (QualifiedTypeParameterElement<Q>) visit(tp, p))
+                .toList();
+        List<QualifiedVariableElement<Q>> params = e.getParameters().stream()
+                .map(param -> (QualifiedVariableElement<Q>) visit(param, p))
+                .toList();
+
         return QualifiedExecutableElement.<Q>builder()
                 .setJavaElement(e)
-                .setTypeParameters(e.getTypeParameters().stream().map(tp -> visitTypeParameter(tp, p)).toList())
-                .setReturnType(typeBuilder.visit(e.getReturnType(), p))
-                .setParameters(e.getParameters().stream().map(param -> visitVariable(param, p)).toList())
-                .setReceiverType(typeBuilder.visit(e.getReceiverType(), p))
-                .setThrownTypes(e.getThrownTypes().stream().map(t -> typeBuilder.visit(t, p)).toList());
+                .setTypeParameters(typeParams)
+                .setReturnType(getQualifiedType(e.getReturnType(), e, p))
+                .setParameters(params)
+                .setReceiverType(getQualifiedType(e.getReceiverType(), e, p))
+                .setThrownTypes(e.getThrownTypes().stream().map(t -> getQualifiedType(t, e, p)).toList());
     }
 
     @Override
@@ -85,6 +107,11 @@ public class BaseQualifiedElementBuilder<Q extends Qualifier, P> extends Abstrac
 
     @Override
     public QualifiedElement<Q> visitPackage(PackageElement e, P p) {
+        throw new UnsupportedOperationException("Qualified %s is not supported".formatted(e));
+    }
+
+    @Override
+    public QualifiedElement<Q> visitUnknown(Element e, P p) {
         throw new UnsupportedOperationException("Qualified %s is not supported".formatted(e));
     }
 

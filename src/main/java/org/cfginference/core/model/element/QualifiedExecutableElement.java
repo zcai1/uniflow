@@ -3,11 +3,13 @@ package org.cfginference.core.model.element;
 import com.google.auto.value.AutoValue;
 import com.google.common.base.Preconditions;
 import com.google.common.collect.ImmutableList;
+import org.cfginference.core.model.type.QualifiedExecutableType;
 import org.cfginference.core.model.type.QualifiedType;
 import org.cfginference.core.model.qualifier.Qualifier;
 import org.cfginference.core.model.util.QualifiedElementVisitor;
 
 import javax.lang.model.element.ExecutableElement;
+import javax.lang.model.type.ExecutableType;
 
 @AutoValue
 public abstract class QualifiedExecutableElement<Q extends Qualifier> extends QualifiedElement<Q> {
@@ -114,5 +116,16 @@ public abstract class QualifiedExecutableElement<Q extends Qualifier> extends Qu
             );
             return element;
         }
+    }
+
+    public QualifiedExecutableType<Q> asType() {
+        return QualifiedExecutableType.<Q>builder()
+                .setJavaType((ExecutableType) getJavaElement().asType())
+                .setJavaElement(getJavaElement())
+                .setParameterTypes(getParameters().stream().map(QualifiedVariableElement::getType).toList())
+                .setReceiverType(getReceiverType())
+                .setReturnType(getReturnType())
+                .setThrownTypes(getThrownTypes())
+                .build();
     }
 }

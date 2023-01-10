@@ -5,7 +5,9 @@ import com.google.common.base.Preconditions;
 import com.google.common.collect.ImmutableList;
 import org.cfginference.core.model.qualifier.Qualifier;
 import org.cfginference.core.model.util.QualifiedTypeVisitor;
+import org.nullness.qual.Nullable;
 
+import javax.lang.model.element.ExecutableElement;
 import javax.lang.model.type.ExecutableType;
 
 @AutoValue
@@ -13,6 +15,8 @@ public abstract class QualifiedExecutableType<Q extends Qualifier> extends Quali
 
     @Override
     public abstract ExecutableType getJavaType();
+
+    public abstract @Nullable ExecutableElement getJavaElement();
 
     // We probably don't need this for the type at call site
     // public abstract ImmutableList<QualifiedTypeVariable<Q>> getTypeVariables();
@@ -41,6 +45,8 @@ public abstract class QualifiedExecutableType<Q extends Qualifier> extends Quali
     public abstract static class Builder<Q extends Qualifier> extends QualifiedType.Builder<Q> {
 
         public abstract Builder<Q> setJavaType(ExecutableType type);
+
+        public abstract Builder<Q> setJavaElement(@Nullable ExecutableElement element);
 
         public abstract Builder<Q> setReturnType(QualifiedType<Q> returnType);
 

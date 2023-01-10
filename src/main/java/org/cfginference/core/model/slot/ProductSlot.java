@@ -5,14 +5,11 @@ import com.google.auto.value.extension.memoized.Memoized;
 import com.google.common.collect.ImmutableMap;
 import com.google.common.collect.ImmutableSet;
 import org.cfginference.core.annotation.ProductVar;
+import org.cfginference.core.model.qualifier.AnnotationProxy;
 import org.cfginference.core.model.qualifier.Qualifier;
 import org.cfginference.core.typesystem.QualifierHierarchy;
+import org.checkerframework.checker.nullness.qual.Nullable;
 import org.checkerframework.javacutil.AnnotationBuilder;
-
-import javax.lang.model.element.AnnotationMirror;
-import javax.lang.model.util.Elements;
-import java.util.Set;
-import java.util.stream.Collectors;
 
 /**
  * This is simply an immutable n-tuple of {@link Slot}s, which is helpful for combining information
@@ -23,21 +20,34 @@ import java.util.stream.Collectors;
 @AutoValue
 public abstract class ProductSlot implements Qualifier {
 
-    private static final String PRODUCT_VAR_NAME = ProductVar.class.getCanonicalName();
-
-    public abstract ImmutableMap<QualifierHierarchy, Slot> getSlots();
+    public abstract ImmutableMap<QualifierHierarchy, ? extends Slot> getSlots();
 
     @Memoized
-    public Set<Integer> getSlotIds() {
-        return getSlots().values().stream().map(Slot::getId).collect(Collectors.toUnmodifiableSet());
+    public ImmutableSet<Integer> getSlotIds() {
+        return getSlots().values().stream().map(Slot::getId).collect(ImmutableSet.toImmutableSet());
+    }
+
+    public @Nullable Slot getSlotByHierarchy(QualifierHierarchy hierarchy) {
+        return getSlots().get(hierarchy);
     }
 
     @Override
-    public AnnotationMirror toAnnotation(Elements elements) {
-        return AnnotationBuilder.fromName(
-                elements,
-                PRODUCT_VAR_NAME,
-                AnnotationBuilder.elementNamesValues("slotIds", getSlotIds().toArray())
+    @Memoized
+    public AnnotationProxy toAnnotation() {
+        return AnnotationProxy.create(
+                ProductVar.class,
+                AnnotationBuilder.elementNamesValues("slotIds", getSlotIds().asList())
         );
+    }
+
+    @Override
+    public String toString() {
+        StringBuilder sb = new StringBuilder();
+        sb.append("{");
+        for (Slot s : getSlots().values()) {
+            sb.append(s);
+        }
+        sb.append("}");
+        return sb.toString();
     }
 }

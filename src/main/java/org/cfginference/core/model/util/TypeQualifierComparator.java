@@ -1,5 +1,6 @@
 package org.cfginference.core.model.util;
 
+import com.google.common.base.Preconditions;
 import org.cfginference.core.model.qualifier.Qualifier;
 import org.cfginference.core.model.type.QualifiedArrayType;
 import org.cfginference.core.model.type.QualifiedDeclaredType;
@@ -9,20 +10,33 @@ import org.cfginference.core.model.type.QualifiedPrimitiveType;
 import org.cfginference.core.model.type.QualifiedType;
 import org.cfginference.core.model.type.QualifiedUnionType;
 
-public class TypeQualifierComparator<Q extends Qualifier> extends DoubleQualifiedTypeScanner<Q, Q, Boolean> {
+import java.util.Collection;
+
+public class TypeQualifierComparator extends DoubleQualifiedTypeScanner<Qualifier, Qualifier, Boolean> {
 
     public TypeQualifierComparator() {
         super(true);
     }
+    
+    public boolean areEqual(QualifiedType type1, QualifiedType type2) {
+        return scan(type1, type2);
+    }
 
     @Override
-    protected Boolean scanAndReduce(QualifiedType<Q> type1, QualifiedType<Q> type2, Boolean r) {
+    public Boolean scan(QualifiedType<Qualifier> type1, QualifiedType<Qualifier> type2) {
+        Preconditions.checkNotNull(type1);
+        Preconditions.checkNotNull(type2);
+        return super.scan(type1, type2);
+    }
+
+    @Override
+    protected Boolean scanAndReduce(QualifiedType<Qualifier> type1, QualifiedType<Qualifier> type2, Boolean r) {
         return r && scan(type1, type2);
     }
 
     @Override
-    protected Boolean scanAndReduce(Iterable<? extends QualifiedType<Q>> types1,
-                                    Iterable<? extends QualifiedType<Q>> types2,
+    protected Boolean scanAndReduce(Collection<? extends QualifiedType<Qualifier>> types1,
+                                    Collection<? extends QualifiedType<Qualifier>> types2,
                                     Boolean r) {
         return r && scan(types1, types2);
     }
@@ -32,42 +46,42 @@ public class TypeQualifierComparator<Q extends Qualifier> extends DoubleQualifie
         throw new UnsupportedOperationException();
     }
 
-    protected boolean areSameQualifier(Q q1, Q q2) {
+    protected boolean areSameQualifier(Qualifier q1, Qualifier q2) {
         return q1.equals(q2);
     }
 
     @Override
-    public Boolean visitArray(QualifiedArrayType<Q> type1, QualifiedArrayType<Q> type2) {
+    public Boolean visitArray(QualifiedArrayType<Qualifier> type1, QualifiedArrayType<Qualifier> type2) {
         return areSameQualifier(type1.getQualifier(), type2.getQualifier())
                 && super.visitArray(type1, type2);
     }
 
     @Override
-    public Boolean visitDeclared(QualifiedDeclaredType<Q> type1, QualifiedDeclaredType<Q> type2) {
+    public Boolean visitDeclared(QualifiedDeclaredType<Qualifier> type1, QualifiedDeclaredType<Qualifier> type2) {
         return areSameQualifier(type1.getQualifier(), type2.getQualifier())
                 && super.visitDeclared(type1, type2);
     }
 
     @Override
-    public Boolean visitIntersection(QualifiedIntersectionType<Q> type1, QualifiedIntersectionType<Q> type2) {
+    public Boolean visitIntersection(QualifiedIntersectionType<Qualifier> type1, QualifiedIntersectionType<Qualifier> type2) {
         return areSameQualifier(type1.getQualifier(), type2.getQualifier())
                 && super.visitIntersection(type1, type2);
     }
 
     @Override
-    public Boolean visitNull(QualifiedNullType<Q> type1, QualifiedNullType<Q> type2) {
+    public Boolean visitNull(QualifiedNullType<Qualifier> type1, QualifiedNullType<Qualifier> type2) {
         return areSameQualifier(type1.getQualifier(), type2.getQualifier())
                 && super.visitNull(type1, type2);
     }
 
     @Override
-    public Boolean visitPrimitive(QualifiedPrimitiveType<Q> type1, QualifiedPrimitiveType<Q> type2) {
+    public Boolean visitPrimitive(QualifiedPrimitiveType<Qualifier> type1, QualifiedPrimitiveType<Qualifier> type2) {
         return areSameQualifier(type1.getQualifier(), type2.getQualifier())
                 && super.visitPrimitive(type1, type2);
     }
 
     @Override
-    public Boolean visitUnion(QualifiedUnionType<Q> type1, QualifiedUnionType<Q> type2) {
+    public Boolean visitUnion(QualifiedUnionType<Qualifier> type1, QualifiedUnionType<Qualifier> type2) {
         return areSameQualifier(type1.getQualifier(), type2.getQualifier())
                 && super.visitUnion(type1, type2);
     }

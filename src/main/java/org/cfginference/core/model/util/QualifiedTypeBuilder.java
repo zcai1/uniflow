@@ -21,12 +21,20 @@ import javax.lang.model.type.IntersectionType;
 import javax.lang.model.type.NoType;
 import javax.lang.model.type.NullType;
 import javax.lang.model.type.PrimitiveType;
+import javax.lang.model.type.TypeMirror;
 import javax.lang.model.type.TypeVariable;
+import javax.lang.model.type.TypeVisitor;
 import javax.lang.model.type.UnionType;
 import javax.lang.model.type.WildcardType;
-import javax.lang.model.util.AbstractTypeVisitor14;
 
-public class BaseQualifiedTypeBuilder<Q extends Qualifier, P> extends AbstractTypeVisitor14<QualifiedType<Q>, P> {
+public abstract class QualifiedTypeBuilder<Q extends Qualifier, P> implements TypeVisitor<QualifiedType<Q>, P> {
+
+    protected abstract Q getQualifier(TypeMirror t, P p);
+
+    @Override
+    public QualifiedType<Q> visit(TypeMirror t, P p) {
+        return t.accept(this, p);
+    }
 
     @Override
     public QualifiedIntersectionType<Q> visitIntersection(IntersectionType t, P p) {
@@ -36,7 +44,8 @@ public class BaseQualifiedTypeBuilder<Q extends Qualifier, P> extends AbstractTy
     protected QualifiedIntersectionType.Builder<Q> defaultBuilder(IntersectionType t, P p) {
         return QualifiedIntersectionType.<Q>builder()
                 .setJavaType(t)
-                .setBounds(t.getBounds().stream().map(b -> visit(b, p)).toList());
+                .setBounds(t.getBounds().stream().map(b -> visit(b, p)).toList())
+                .setQualifier(getQualifier(t, p));
     }
 
     @Override
@@ -47,7 +56,8 @@ public class BaseQualifiedTypeBuilder<Q extends Qualifier, P> extends AbstractTy
     protected QualifiedUnionType.Builder<Q> defaultBuilder(UnionType t, P p) {
         return QualifiedUnionType.<Q>builder()
                 .setJavaType(t)
-                .setAlternatives(t.getAlternatives().stream().map(a -> visit(a, p)).toList());
+                .setAlternatives(t.getAlternatives().stream().map(a -> visit(a, p)).toList())
+                .setQualifier(getQualifier(t, p));
     }
 
     @Override
@@ -57,7 +67,8 @@ public class BaseQualifiedTypeBuilder<Q extends Qualifier, P> extends AbstractTy
 
     protected QualifiedPrimitiveType.Builder<Q> defaultBuilder(PrimitiveType t, P p) {
         return QualifiedPrimitiveType.<Q>builder()
-                .setJavaType(t);
+                .setJavaType(t)
+                .setQualifier(getQualifier(t, p));
     }
 
     @Override
@@ -67,7 +78,8 @@ public class BaseQualifiedTypeBuilder<Q extends Qualifier, P> extends AbstractTy
 
     protected QualifiedNullType.Builder<Q> defaultBuilder(NullType t, P p) {
         return QualifiedNullType.<Q>builder()
-                .setJavaType(t);
+                .setJavaType(t)
+                .setQualifier(getQualifier(t, p));
     }
 
     @Override
@@ -78,7 +90,8 @@ public class BaseQualifiedTypeBuilder<Q extends Qualifier, P> extends AbstractTy
     protected QualifiedArrayType.Builder<Q> defaultBuilder(ArrayType t, P p) {
         return QualifiedArrayType.<Q>builder()
                 .setJavaType(t)
-                .setComponentType(visit(t, p));
+                .setComponentType(visit(t.getComponentType(), p))
+                .setQualifier(getQualifier(t, p));
     }
 
     @Override
@@ -87,10 +100,16 @@ public class BaseQualifiedTypeBuilder<Q extends Qualifier, P> extends AbstractTy
     }
 
     protected QualifiedDeclaredType.Builder<Q> defaultBuilder(DeclaredType t, P p) {
+        if (t.getTypeArguments().size() > 0) {
+            // TODO(generics): implementation
+            throw new UnsupportedOperationException("Qualified %s is not supported".formatted(t));
+        }
+
         return QualifiedDeclaredType.<Q>builder()
                 .setJavaType(t)
                 .setEnclosingType(visit(t.getEnclosingType(), p))
-                .setTypeArguments(t.getTypeArguments().stream().map(ta -> visit(ta, p)).toList());
+                .setTypeArguments(t.getTypeArguments().stream().map(ta -> visit(ta, p)).toList())
+                .setQualifier(getQualifier(t, p));
     }
 
     @Override
@@ -131,6 +150,11 @@ public class BaseQualifiedTypeBuilder<Q extends Qualifier, P> extends AbstractTy
     @Override
     public QualifiedWildcardType<Q> visitWildcard(WildcardType t, P p) {
         // TODO(generics): implementation
+        throw new UnsupportedOperationException("Qualified %s is not supported".formatted(t));
+    }
+
+    @Override
+    public QualifiedType<Q> visitUnknown(TypeMirror t, P p) {
         throw new UnsupportedOperationException("Qualified %s is not supported".formatted(t));
     }
 }

@@ -1,7 +1,9 @@
-package org.cfginference.core.model.error;
+package org.cfginference.core.model.reporting;
 
 import com.google.common.base.Preconditions;
 import org.checkerframework.checker.nullness.qual.Nullable;
+
+import java.util.Optional;
 
 public class PluginError extends RuntimeException {
 
@@ -14,7 +16,7 @@ public class PluginError extends RuntimeException {
     }
 
     public PluginError(Throwable cause) {
-        this(cause.getMessage(), new Throwable());
+        this(Optional.ofNullable(cause.getMessage()).orElse(""), cause);
     }
 
     public PluginError(String message, Throwable cause) {

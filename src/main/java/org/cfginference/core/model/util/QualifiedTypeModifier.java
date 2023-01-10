@@ -54,6 +54,7 @@ public abstract class QualifiedTypeModifier<Q1 extends Qualifier, Q2 extends Qua
     public QualifiedExecutableType<Q2> visitExecutable(QualifiedExecutableType<Q1> type, P p) {
         return QualifiedExecutableType.<Q2>builder()
                 .setJavaType(type.getJavaType())
+                .setJavaElement(type.getJavaElement())
                 .setReceiverType(visit(type.getReceiverType(), p))
                 .setReturnType(visit(type.getReturnType(), p))
                 .setParameterTypes(visit(type.getParameterTypes(), p))
