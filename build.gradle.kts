@@ -156,3 +156,5 @@ configure<CheckerFrameworkExtension> {
 tasks.test {
     useJUnitPlatform()
 }
+
+// TODO: find cyclic dependencies between classes that are stored in Context, as they may cause infinite recursion
