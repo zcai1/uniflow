@@ -1,19 +1,16 @@
 package org.nullness.qual;
 
+import org.cfginference.core.model.qualifier.AnnotationProxy;
 import org.cfginference.core.model.qualifier.Qualifier;
-import org.checkerframework.javacutil.AnnotationBuilder;
-
-import javax.lang.model.element.AnnotationMirror;
-import javax.lang.model.util.Elements;
 
 public enum NullnessQual implements Qualifier {
     NONNULL, NULLABLE;
 
+
     @Override
-    public AnnotationMirror toAnnotation(Elements elements) {
-        if (this == NullnessQual.NONNULL) {
-            return AnnotationBuilder.fromClass(elements, NonNull.class);
-        }
-        return AnnotationBuilder.fromClass(elements, Nullable.class);
+    public AnnotationProxy toAnnotation() {
+        return AnnotationProxy.create(
+                this == NullnessQual.NONNULL ? NonNull.class : Nullable.class
+        );
     }
 }
