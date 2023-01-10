@@ -3,7 +3,6 @@ package org.cfginference.core;
 import com.beust.jcommander.JCommander;
 import com.beust.jcommander.ParameterException;
 import com.google.auto.service.AutoService;
-import com.google.common.base.Preconditions;
 import com.google.common.base.Verify;
 import com.sun.source.util.JavacTask;
 import com.sun.source.util.Plugin;
@@ -18,7 +17,6 @@ import com.sun.tools.javac.util.Context;
 import org.cfginference.core.event.Event;
 import org.cfginference.core.event.EventManager;
 import org.cfginference.core.flow.EnterAnalysis;
-import org.cfginference.core.model.reporting.PluginError;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -91,16 +89,6 @@ public final class CFGInferencePlugin implements Plugin, TaskListener {
         ch.qos.logback.classic.Logger root = (ch.qos.logback.classic.Logger) LoggerFactory.getLogger(
                 ch.qos.logback.classic.Logger.ROOT_LOGGER_NAME);
         root.setLevel(level.toLogbackLevel());
-    }
-
-    private static AbstractInferenceProcessor initProcessor(PluginOptions options, Context context) {
-        Preconditions.checkNotNull(options);
-        try {
-            Class<?> processorClass = Class.forName(options.getProcessor());
-            return AbstractInferenceProcessor.instance(processorClass, context);
-        } catch (ClassNotFoundException e) {
-            throw new PluginError(e);
-        }
     }
 
     @Override
