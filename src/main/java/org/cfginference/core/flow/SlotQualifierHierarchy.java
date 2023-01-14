@@ -102,7 +102,13 @@ public final class SlotQualifierHierarchy {
             return slot1;
         }
 
-        // case 4: create a merge slot
+        // case 4: lub(slot1, slot2) already exists
+        MergeSlot existingMergeSlot = slotManager.getExistingMergeSlot(slot1, slot2, true);
+        if (existingMergeSlot != null) {
+            return existingMergeSlot;
+        }
+
+        // case 5: create a merge slot
         NodeLocation nodeLocation = locationManager.getNodeLocation();
         MergeSlot mergeSlot = slotManager.createMergeSlot(qualifierHierarchy, nodeLocation, slot1, slot2, true);
         // create constraints
@@ -145,7 +151,13 @@ public final class SlotQualifierHierarchy {
             return slot2;
         }
 
-        // case 4: create a merge slot
+        // case 4: glb(slot1, slot2) already exists
+        MergeSlot existingMergeSlot = slotManager.getExistingMergeSlot(slot1, slot2, false);
+        if (existingMergeSlot != null) {
+            return existingMergeSlot;
+        }
+
+        // case 5: create a merge slot
         NodeLocation nodeLocation = locationManager.getNodeLocation();
         MergeSlot mergeSlot = slotManager.createMergeSlot(qualifierHierarchy, nodeLocation, slot1, slot2, false);
         Constraint mergeIsSubOfSlot1 = getSubtypeConstraint(mergeSlot, slot1);
