@@ -9,19 +9,20 @@ import com.sun.tools.javac.util.Context;
 import org.cfginference.core.model.constraint.ArithmeticConstraint.ArithmeticOperation;
 import org.cfginference.core.model.constraint.ComparisonConstraint.ComparisonOperation;
 import org.cfginference.core.model.qualifier.Qualifier;
-import org.cfginference.core.model.reporting.CompilerMessage;
+import org.cfginference.core.model.reporting.AnalysisMessage;
 import org.cfginference.core.model.slot.ArithmeticSlot;
 import org.cfginference.core.model.slot.ComparisonSlot;
 import org.cfginference.core.model.slot.ConstantSlot;
-import org.cfginference.core.model.slot.MergeSlot;
 import org.cfginference.core.model.slot.Slot;
 import org.cfginference.core.model.slot.SlotManager;
 import org.cfginference.core.model.slot.VariableSlot;
 import org.cfginference.core.model.slot.ViewpointAdaptationSlot;
 import org.cfginference.core.typesystem.QualifierHierarchy;
 import org.checkerframework.checker.nullness.qual.Nullable;
+import org.checkerframework.javacutil.Pair;
 
 import java.util.Collection;
+import java.util.Collections;
 import java.util.List;
 import java.util.Objects;
 import java.util.Set;
@@ -32,7 +33,7 @@ public final class ConstraintManager {
 
     private final SetMultimap<QualifierHierarchy, Constraint> effectiveConstraints;
 
-    private final SetMultimap<Constraint, CompilerMessage> unsatMessages;
+    private final SetMultimap<Pair<QualifierHierarchy, Constraint>, AnalysisMessage> unsatMessages;
 
     private ConstraintManager(Context context) {
         this.slotManager = SlotManager.instance(context);
@@ -52,7 +53,7 @@ public final class ConstraintManager {
 
     private void addEffectiveConstraints(QualifierHierarchy owner,
                                          Set<Constraint> constraints,
-                                         @Nullable CompilerMessage unsatMessage) {
+                                         @Nullable AnalysisMessage unsatMessage) {
         Objects.requireNonNull(owner);
         Objects.requireNonNull(constraints);
 
@@ -63,14 +64,14 @@ public final class ConstraintManager {
                 effectiveConstraints.put(owner, c);
 
                 if (unsatMessage != null) {
-                    unsatMessages.put(c, unsatMessage);
+                    unsatMessages.put(Pair.of(owner, c), unsatMessage);
                 }
             }
         }
     }
 
     private void addEffectiveConstraints(SetMultimap<QualifierHierarchy, Constraint> constraints,
-                                         @Nullable CompilerMessage unsatMessage) {
+                                         @Nullable AnalysisMessage unsatMessage) {
         Objects.requireNonNull(constraints);
 
         for (QualifierHierarchy owner : constraints.keys()) {
@@ -88,14 +89,14 @@ public final class ConstraintManager {
 
     public void addExplainedConstraints(QualifierHierarchy owner,
                                         Set<Constraint> constraints,
-                                        CompilerMessage unsatMessage) {
+                                        AnalysisMessage unsatMessage) {
         Objects.requireNonNull(unsatMessage);
 
         addEffectiveConstraints(owner, constraints, unsatMessage);
     }
 
     public void addExplainedConstraints(SetMultimap<QualifierHierarchy, Constraint> constraints,
-                                        CompilerMessage unsatMessage) {
+                                        AnalysisMessage unsatMessage) {
         Objects.requireNonNull(unsatMessage);
 
         addEffectiveConstraints(constraints, unsatMessage);
@@ -103,6 +104,14 @@ public final class ConstraintManager {
 
     public SetMultimap<QualifierHierarchy, Constraint> getEffectiveConstraints() {
         return Multimaps.unmodifiableSetMultimap(effectiveConstraints);
+    }
+
+    public Set<Constraint> getEffectiveConstraints(QualifierHierarchy qualifierHierarchy) {
+        return Collections.unmodifiableSet(effectiveConstraints.get(qualifierHierarchy));
+    }
+
+    public Set<AnalysisMessage> getUnsatMessages(QualifierHierarchy owner, Constraint constraint) {
+        return unsatMessages.get(Pair.of(owner, constraint));
     }
 
     public Constraint getForSubtype(Slot subtype, Slot superType) {
@@ -119,10 +128,6 @@ public final class ConstraintManager {
         // BOTTOM <: V2 => TRUE
         // TOP <: V2 => REPLACE_WITH_EQUALITY
         // V == V => TRUE
-        // V1 <: lub(V1, ...) => TRUE
-        // V1 <: glb(V1, ...) => REPLACE_WITH_EQUALITY
-        // lub(V2, ...) <: V2 => REPLACE_WITH_EQUALITY
-        // glb(V2, ...) <: V2 => TRUE
         // otherwise => CREATE_REAL_SUBTYPE_CONSTRAINT
 
         if (subtype instanceof ConstantSlot constantSubtype && superType instanceof ConstantSlot constantSuperType) {
@@ -151,26 +156,6 @@ public final class ConstraintManager {
 
         if (subtype.equals(superType)) {
             return AlwaysTrueConstraint.instance();
-        }
-
-        if (subtype instanceof MergeSlot mergeSubType) {
-            if (slotManager.isMergedInto(superType, mergeSubType)) {
-                if (mergeSubType.isLub()) {
-                    return getForEquality(subtype, superType);
-                } else {
-                    return AlwaysTrueConstraint.instance();
-                }
-            }
-        }
-
-        if (superType instanceof MergeSlot mergeSuperType) {
-            if (slotManager.isMergedInto(subtype, mergeSuperType)) {
-                if (mergeSuperType.isLub()) {
-                    return AlwaysTrueConstraint.instance();
-                } else {
-                    return getForEquality(subtype, superType);
-                }
-            }
         }
 
         return createSubtypeConstraint(subtype, superType);
