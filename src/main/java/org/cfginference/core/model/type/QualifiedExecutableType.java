@@ -5,7 +5,7 @@ import com.google.common.base.Preconditions;
 import com.google.common.collect.ImmutableList;
 import org.cfginference.core.model.qualifier.Qualifier;
 import org.cfginference.core.model.util.QualifiedTypeVisitor;
-import org.nullness.qual.Nullable;
+import org.checkerframework.checker.nullness.qual.Nullable;
 
 import javax.lang.model.element.ExecutableElement;
 import javax.lang.model.type.ExecutableType;
