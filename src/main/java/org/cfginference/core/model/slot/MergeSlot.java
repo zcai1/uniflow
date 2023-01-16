@@ -1,6 +1,7 @@
 package org.cfginference.core.model.slot;
 
 import com.google.auto.value.AutoValue;
+import com.google.auto.value.extension.memoized.Memoized;
 import org.cfginference.core.model.util.serialization.Serializer;
 import org.checkerframework.checker.nullness.qual.Nullable;
 
@@ -43,5 +44,16 @@ public abstract class MergeSlot extends VariableSlot {
     @Override
     public final <S, T> S serialize(Serializer<S, T> serializer) {
         return serializer.serialize(this);
+    }
+
+    @Memoized
+    @Override
+    public String toString() {
+        String details = "(%s of %s and %s)".formatted(
+                isLub() ? "lub" : "glb",
+                getLeftSlot().getId(),
+                getRightSlot().getId()
+        );
+        return super.toString() + details;
     }
 }

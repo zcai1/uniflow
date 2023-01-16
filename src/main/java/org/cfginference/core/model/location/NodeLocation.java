@@ -18,4 +18,13 @@ public abstract class NodeLocation implements QualifierLocation {
     public boolean isInsertable() {
         return false;
     }
+
+    @Override
+    public String toString() {
+        return "NodeLocation{"
+                + "nodeClass=" + getNodeClass().getSimpleName() + ", "
+                + "nodeString=" + getNodeString() + ", "
+                + "ASTRecord=" + getASTRecord()
+                + "}";
+    }
 }

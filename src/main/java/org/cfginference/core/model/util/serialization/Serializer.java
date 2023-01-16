@@ -64,15 +64,15 @@ public interface Serializer<S, T> {
 
     T serialize(InequalityConstraint constraint);
 
-    T serialize(ComparableConstraint comparableConstraint);
+    T serialize(ComparableConstraint constraint);
 
-    T serialize(ComparisonConstraint comparisonConstraint);
+    T serialize(ComparisonConstraint constraint);
 
-    T serialize(ViewpointAdaptationConstraint combineConstraint);
+    T serialize(ViewpointAdaptationConstraint constraint);
 
-    T serialize(PreferenceConstraint preferenceConstraint);
+    T serialize(PreferenceConstraint constraint);
 
-    T serialize(ImplicationConstraint implicationConstraint);
+    T serialize(ImplicationConstraint constraint);
 
-    T serialize(ArithmeticConstraint arithmeticConstraint);
+    T serialize(ArithmeticConstraint constraint);
 }
