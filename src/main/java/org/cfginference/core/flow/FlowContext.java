@@ -5,10 +5,6 @@ import com.sun.source.tree.Tree;
 import com.sun.source.util.TreePath;
 import com.sun.tools.javac.util.Context;
 import org.cfginference.core.PluginOptions;
-import org.cfginference.core.event.Event;
-import org.cfginference.core.event.EventListener;
-import org.cfginference.core.event.EventManager;
-import org.checkerframework.checker.nullness.qual.EnsuresNonNull;
 import org.checkerframework.checker.nullness.qual.Nullable;
 import org.checkerframework.dataflow.analysis.AnalysisResult;
 import org.checkerframework.dataflow.analysis.TransferInput;
@@ -19,11 +15,11 @@ import org.checkerframework.javacutil.CollectionUtils;
 
 import java.util.Collections;
 import java.util.IdentityHashMap;
-import java.util.LinkedHashMap;
 import java.util.Map;
-import java.util.Objects;
 
 public final class FlowContext {
+
+    private final GeneralContext generalContext;
 
     private final Map<Tree, TreePath> artificialTrees;
 
@@ -35,8 +31,6 @@ public final class FlowContext {
     private @Nullable ControlFlowGraph cfg;
 
     private @Nullable TreePath treePath;
-
-    private @Nullable CompilationUnitTree root;
 
     // Note: use a setter for this field to avoid cyclic dependency in constructor
     private @Nullable FlowAnalysis flowAnalysis;
@@ -51,6 +45,7 @@ public final class FlowContext {
 
     private FlowContext(Context context) {
         PluginOptions options = PluginOptions.instance(context);
+        generalContext = GeneralContext.instance(context);
         artificialTrees = new IdentityHashMap<>();
         analysisCaches = CollectionUtils.createLRUCache(options.getCacheSize());
         flowResult = new AnalysisResult<>(analysisCaches);
@@ -63,7 +58,6 @@ public final class FlowContext {
         artificialTrees.clear();
         flowResult = new AnalysisResult<>(analysisCaches);
         treePath = null;
-        root = null;
     }
 
     void addArtificialTrees(Map<Tree, TreePath> treeToPath) {
@@ -101,14 +95,10 @@ public final class FlowContext {
 
     public void setTreePath(@Nullable TreePath treePath) {
         this.treePath = treePath;
-
-        if (treePath != null && treePath.getCompilationUnit() != root) {
-            root = treePath.getCompilationUnit();
-        }
     }
 
     public CompilationUnitTree getRoot() {
-        return Objects.requireNonNull(root);
+        return generalContext.getRoot();
     }
 
     public void setFlowAnalysis(FlowAnalysis flowAnalysis) {
@@ -126,7 +116,7 @@ public final class FlowContext {
         if (flowAnalysis != null) {
             Node node = flowAnalysis.getCurrentNode();
             if (node == null) {
-                node = flowAnalysis.getLastNode();
+                node = flowAnalysis.getApproxCurrentNode();
             }
             return node;
         }
