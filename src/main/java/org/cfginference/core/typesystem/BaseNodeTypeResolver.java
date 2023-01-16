@@ -163,8 +163,11 @@ public class BaseNodeTypeResolver
 
         QualifiedType<ProductSlot> refinedType;
         if (inferenceMode) {
+            // TODO: make it work properly for array access!
             refinedType = refinementSlotTypeModifier.visit(lhsType, null);
+            // in inference, both the lhs and the return type of an assignment should be refinement type
             cache.put(n, refinedType);
+            cache.put(n.getTarget(), refinedType);
         } else {
             refinedType = refineType(lhsType, rhsType);
         }
@@ -203,6 +206,7 @@ public class BaseNodeTypeResolver
     @Override
     public QualifiedType<ProductSlot> visitMethodInvocation(MethodInvocationNode n,
                                                             TransferInput<FlowValue, FlowStore> input) {
+        // TODO: for pure methods, use value from store
         QualifiedExecutableType<ProductSlot> execType =
                 (QualifiedExecutableType<ProductSlot>) input.getValueOfSubNode(n.getTarget()).type;
         return execType.getReturnType();
@@ -219,6 +223,11 @@ public class BaseNodeTypeResolver
     @Override
     public @Nullable QualifiedType<ProductSlot> visitArrayAccess(ArrayAccessNode n,
                                                                  TransferInput<FlowValue, FlowStore> input) {
+        FlowValue existingValue = input.getRegularStore().getValue(n);
+        if (existingValue != null) {
+            return existingValue.type;
+        }
+
         QualifiedArrayType<ProductSlot> arrayType =
                 (QualifiedArrayType<ProductSlot>) input.getValueOfSubNode(n.getArray()).type;
         return arrayType.getComponentType();
@@ -300,6 +309,10 @@ public class BaseNodeTypeResolver
         Preconditions.checkArgument(n instanceof FieldAccessNode
                 || n instanceof LocalVariableNode
                 || n instanceof ArrayAccessNode);
+
+        if (inferenceMode && cache.containsKey(n)) {
+            return cache.get(n);
+        }
 
         QualifiedType<ProductSlot> lhsType;
 

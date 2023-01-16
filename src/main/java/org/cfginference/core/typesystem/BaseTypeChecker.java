@@ -1,6 +1,5 @@
 package org.cfginference.core.typesystem;
 
-import com.google.common.collect.LinkedHashMultimap;
 import com.google.common.collect.SetMultimap;
 import com.sun.source.tree.ClassTree;
 import com.sun.source.tree.MethodTree;
@@ -11,6 +10,7 @@ import com.sun.tools.javac.util.Context;
 import org.cfginference.core.flow.FlowContext;
 import org.cfginference.core.flow.FlowStore;
 import org.cfginference.core.flow.FlowValue;
+import org.cfginference.core.flow.GeneralContext;
 import org.cfginference.core.flow.SlotQualifierHierarchy;
 import org.cfginference.core.model.constraint.Constraint;
 import org.cfginference.core.model.constraint.ConstraintManager;
@@ -18,7 +18,7 @@ import org.cfginference.core.model.element.QualifiedElement;
 import org.cfginference.core.model.element.QualifiedExecutableElement;
 import org.cfginference.core.model.element.QualifiedTypeElement;
 import org.cfginference.core.model.element.QualifiedVariableElement;
-import org.cfginference.core.model.reporting.CompilerMessage;
+import org.cfginference.core.model.reporting.AnalysisMessage;
 import org.cfginference.core.model.reporting.PluginError;
 import org.cfginference.core.model.slot.ProductSlot;
 import org.cfginference.core.model.type.PrimaryQualifiedType;
@@ -49,7 +49,6 @@ import javax.lang.model.element.NestingKind;
 import javax.lang.model.element.TypeElement;
 import javax.lang.model.util.Elements;
 import javax.lang.model.util.Types;
-import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
 import java.util.Objects;
@@ -62,6 +61,8 @@ public class BaseTypeChecker implements TypeChecker {
     protected final Elements elements;
 
     protected final Types types;
+
+    protected final GeneralContext generalContext;
 
     protected final FlowContext flowContext;
 
@@ -85,6 +86,7 @@ public class BaseTypeChecker implements TypeChecker {
                            TypeSystem typeSystem) {
         this.types = JavacTypes.instance(context);
         this.elements = JavacElements.instance(context);
+        this.generalContext = GeneralContext.instance(context);
         this.flowContext = FlowContext.instance(context);
         this.qualifierHierarchies = typeSystem.getQualifierHierarchies();
         this.slotQualifierHierarchy = SlotQualifierHierarchy.instance(context);
@@ -211,7 +213,8 @@ public class BaseTypeChecker implements TypeChecker {
                     superClauseQualifier,
                     qualifierHierarchies
             );
-            CompilerMessage unsatMessage = CompilerMessage.createError(
+            AnalysisMessage unsatMessage = AnalysisMessage.createError(
+                    generalContext.getRoot(),
                     extendsClause != null ? extendsClause : javaElement,
                     "invalid.declaration.extends",
                     declQualifier,
@@ -229,7 +232,8 @@ public class BaseTypeChecker implements TypeChecker {
                         interfaceQualifier,
                         qualifierHierarchies
                 );
-                unsatMessage = CompilerMessage.createError(
+                unsatMessage = AnalysisMessage.createError(
+                        generalContext.getRoot(),
                         interfaceSource,
                         "invalid.declaration.impl",
                         declQualifier,
@@ -265,7 +269,8 @@ public class BaseTypeChecker implements TypeChecker {
                             qualifiedTypeElement.getQualifier(),
                             qualifierHierarchies
                     );
-                    CompilerMessage unsatMessage = CompilerMessage.createError(
+                    AnalysisMessage unsatMessage = AnalysisMessage.createError(
+                            generalContext.getRoot(),
                             source,
                             "incompatible.type.use",
                             type
@@ -294,7 +299,8 @@ public class BaseTypeChecker implements TypeChecker {
             SetMultimap<QualifierHierarchy, Constraint> returnTypeConstraints = typeHierarchy.getSubtypeConstraints(
                     thisMethodType.getReturnType(),
                     overriddenMethodType.getReturnType());
-            CompilerMessage unsatMessage = CompilerMessage.createError(
+            AnalysisMessage unsatMessage = AnalysisMessage.createError(
+                    generalContext.getRoot(),
                     returnTypeTree != null ? returnTypeTree : thisMethodJavaElement,
                     "invalid.override.return.type",
                     thisMethodType.getReturnType(),
@@ -304,7 +310,8 @@ public class BaseTypeChecker implements TypeChecker {
             SetMultimap<QualifierHierarchy, Constraint> receiverTypeConstraints = typeHierarchy.getSubtypeConstraints(
                     overriddenMethodType.getReceiverType(),
                     thisMethodType.getReceiverType());
-            unsatMessage = CompilerMessage.createError(
+            unsatMessage = AnalysisMessage.createError(
+                    generalContext.getRoot(),
                     receiverTypeTree != null ? receiverTypeTree : thisMethodJavaElement,
                     "invalid.override.receiver.type",
                     thisMethodType.getReceiverType(),
@@ -317,7 +324,8 @@ public class BaseTypeChecker implements TypeChecker {
                 SetMultimap<QualifierHierarchy, Constraint> paramTypeConstraints = typeHierarchy.getSubtypeConstraints(
                         overriddenParamType.getType(),
                         thisParamType.getType());
-                unsatMessage = CompilerMessage.createError(
+                unsatMessage = AnalysisMessage.createError(
+                        generalContext.getRoot(),
                         paramTrees != null ? paramTrees.get(i) : thisMethodJavaElement,
                         "invalid.override.param.type",
                         thisParamType.getType(),
@@ -355,7 +363,8 @@ public class BaseTypeChecker implements TypeChecker {
                 // TODO: handle vararg (both type check and location) correctly
                 SetMultimap<QualifierHierarchy, Constraint> constraints =
                         typeHierarchy.getSubtypeConstraints(argType, paramType);
-                CompilerMessage unsatMessage = CompilerMessage.createError(
+                AnalysisMessage unsatMessage = AnalysisMessage.createError(
+                        generalContext.getRoot(),
                         NodeUtils.getRealSourceTree(flowContext, argNode),
                         "argument.type.incompatible",
                         argType,
@@ -373,7 +382,8 @@ public class BaseTypeChecker implements TypeChecker {
 
             SetMultimap<QualifierHierarchy, Constraint> constraints =
                     typeHierarchy.getSubtypeConstraints(rhsType, lhsType);
-            CompilerMessage unsatMessage = CompilerMessage.createError(
+            AnalysisMessage unsatMessage = AnalysisMessage.createError(
+                    generalContext.getRoot(),
                     NodeUtils.getRealSourceTree(flowContext, n),
                     "assignment.type.incompatible",
                     rhsType,
@@ -402,7 +412,8 @@ public class BaseTypeChecker implements TypeChecker {
 
                 SetMultimap<QualifierHierarchy, Constraint> constraints =
                         typeHierarchy.getSubtypeConstraints(returnExprType, methodType.getReturnType());
-                CompilerMessage unsatMessage = CompilerMessage.createError(
+                AnalysisMessage unsatMessage = AnalysisMessage.createError(
+                        generalContext.getRoot(),
                         NodeUtils.getRealSourceTree(flowContext, n),
                         "return.type.incompatible",
                         returnExprType,

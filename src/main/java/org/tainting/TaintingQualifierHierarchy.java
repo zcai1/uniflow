@@ -8,8 +8,14 @@ import org.checkerframework.checker.tainting.qual.Untainted;
 import org.checkerframework.javacutil.AnnotationUtils;
 
 import javax.lang.model.element.AnnotationMirror;
+import java.util.Collections;
+import java.util.EnumSet;
+import java.util.Set;
 
 public class TaintingQualifierHierarchy extends AbstractQualifierHierarchy {
+
+    private Set<Qualifier> qualifiers = Collections.unmodifiableSet(EnumSet.allOf(TaintQual.class));
+
     @Override
     public boolean isInHierarchy(Qualifier qualifier) {
         return qualifier instanceof TaintQual;
@@ -74,5 +80,10 @@ public class TaintingQualifierHierarchy extends AbstractQualifierHierarchy {
             return TaintQual.UNTAINTED;
         }
         return null;
+    }
+
+    @Override
+    public Set<Qualifier> getAllDefaultQualifiers() {
+        return qualifiers;
     }
 }

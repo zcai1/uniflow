@@ -5,8 +5,6 @@ import org.cfginference.core.model.constraint.Constraint;
 import org.cfginference.core.model.slot.ProductSlot;
 import org.cfginference.core.model.type.QualifiedType;
 
-import java.util.Set;
-
 public interface TypeHierarchy {
 
     SetMultimap<QualifierHierarchy, Constraint> getSubtypeConstraints(

@@ -4,6 +4,7 @@ import org.cfginference.core.model.qualifier.Qualifier;
 import org.checkerframework.checker.nullness.qual.Nullable;
 
 import javax.lang.model.element.AnnotationMirror;
+import java.util.Set;
 
 public interface QualifierHierarchy {
 
@@ -67,4 +68,6 @@ public interface QualifierHierarchy {
 
     // Converts an annotation mirror to qualifier, or null if it's not supported
     @Nullable Qualifier getQualifier(AnnotationMirror annotationMirror);
+
+    Set<Qualifier> getAllDefaultQualifiers();
 }
