@@ -80,27 +80,22 @@ public final class SlotManager {
         return Collections.unmodifiableList(slots);
     }
 
-    public @Nullable MergeSlot getMergeSlot(int slot1, int slot2, boolean isLub) {
-        Preconditions.checkArgument(0 <= slot1 && slot1 < slots.size());
-        Preconditions.checkArgument(0 <= slot2 && slot2 < slots.size());
-
-        SetMultimap<Integer, Integer> mergedToSlots = isLub ? mergedToLubs : mergedToGlbs;
+    public @Nullable MergeSlot getExistingMergeSlot(Slot slot1, Slot slot2, boolean isLub) {
+        Map<Pair<Slot, Slot>, MergeSlot> cache = isLub ? lubSlots : glbSlots;
         // case 1: Merge(slot1, slot2) exists
-        Set<Integer> directIntersection =
-                Sets.intersection(mergedToSlots.get(slot1), mergedToSlots.get(slot2)).immutableCopy();
-        Verify.verify(directIntersection.size() <= 1, "Duplicate merge slots for %s and %s", slot1, slot2);
-        if (directIntersection.size() == 1) {
-            return (MergeSlot) slots.get(directIntersection.iterator().next());
+        MergeSlot directMerge = cache.get(Pair.of(slot1, slot2));
+        if (directMerge != null) {
+            return directMerge;
         }
 
-        // case 2: slot1 <: slot2 and slot2 is a MergeSlot with slot2.isLub() == isLub
+        // case 2: slot1 is already merged into slot2
         if (isMergedInto(slot1, slot2, isLub)) {
-            return (MergeSlot) slots.get(slot2);
+            return (MergeSlot) slot2;
         }
 
-        // case 3: slot2 <: slot1 and slot1 is a MergeSlot with slot1.isLub() == isLub
+        // case 3: slot2 is already merged into slot1
         if (isMergedInto(slot2, slot1, isLub)) {
-            return (MergeSlot) slots.get(slot1);
+            return (MergeSlot) slot1;
         }
         return null;
     }
@@ -108,7 +103,7 @@ public final class SlotManager {
     /**
      * @return true if {@code srcSlot} is already merged into {@code targetSlot}
      */
-    public boolean isMergedInto(int srcSlot, MergeSlot targetSlot) {
+    private boolean isMergedInto(int srcSlot, MergeSlot targetSlot) {
         SetMultimap<Integer, Integer> mergedToMap = targetSlot.isLub() ? mergedToLubs : mergedToGlbs;
         Deque<Integer> queue = new ArrayDeque<>();
 
@@ -130,12 +125,8 @@ public final class SlotManager {
         return isMergedInto(srcSlot.getId(), targetSlot);
     }
 
-    public boolean isMergedInto(int srcSlot, int targetSlot, boolean isLub) {
-        Preconditions.checkArgument(0 <= srcSlot && srcSlot < slots.size());
-        Preconditions.checkArgument(0 <= targetSlot && targetSlot < slots.size());
-
-        Slot targetSlotObj = slots.get(targetSlot);
-        if (targetSlotObj instanceof MergeSlot targetMergeSlot) {
+    public boolean isMergedInto(Slot srcSlot, Slot targetSlot, boolean isLub) {
+        if (targetSlot instanceof MergeSlot targetMergeSlot) {
             return targetMergeSlot.isLub() == isLub && isMergedInto(srcSlot, targetMergeSlot);
         }
         return false;
