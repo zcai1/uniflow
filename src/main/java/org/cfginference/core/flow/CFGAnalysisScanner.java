@@ -20,9 +20,7 @@ import org.cfginference.core.event.EventListener;
 import org.cfginference.core.event.EventManager;
 import org.cfginference.core.typesystem.TypeSystem;
 import org.checkerframework.checker.nullness.qual.Nullable;
-import org.checkerframework.dataflow.analysis.Analysis;
 import org.checkerframework.dataflow.analysis.TransferInput;
-import org.checkerframework.dataflow.analysis.TransferResult;
 import org.checkerframework.dataflow.cfg.ControlFlowGraph;
 import org.checkerframework.dataflow.cfg.UnderlyingAST;
 import org.checkerframework.dataflow.cfg.block.Block;
@@ -248,9 +246,9 @@ public final class CFGAnalysisScanner extends TreePathScanner<Void, Void> implem
     }
 
     private @Nullable CFGVisualizer<FlowValue, FlowStore, FlowTransfer> createCFGVisualizer() {
-        if (options.getFlowDotDir() != null) {
+        if (options.getFlowOutDir() != null) {
             Map<String, Object> args = new HashMap<>(3);
-            args.put("outdir", options.getFlowDotDir());
+            args.put("outdir", options.getFlowOutDir());
             args.put("verbose", options.isVerboseCfg());
             args.put("checkerName", "CFGChecker");
 
