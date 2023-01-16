@@ -12,7 +12,6 @@ import org.checkerframework.dataflow.cfg.block.Block;
 import org.checkerframework.dataflow.cfg.node.Node;
 
 import javax.lang.model.type.TypeMirror;
-import java.util.Collections;
 import java.util.IdentityHashMap;
 import java.util.Map;
 import java.util.Set;
@@ -24,13 +23,13 @@ public final class FlowAnalysis extends ForwardAnalysisImpl<FlowValue, FlowStore
     /**
      * last node analyzed in the current block analysis
      */
-    private @Nullable Node lastNode;
+    private @Nullable Node approxCurrentNode;
 
     private FlowAnalysis(Context context) {
         super(getMaxCountBeforeWidening(context));
         this.transferFunction = FlowTransfer.instance(context);
         this.flowContext = FlowContext.instance(context);
-        this.lastNode = null;
+        this.approxCurrentNode = null;
 
         context.put(FlowAnalysis.class, this);
     }
@@ -91,7 +90,8 @@ public final class FlowAnalysis extends ForwardAnalysisImpl<FlowValue, FlowStore
         try {
             super.performAnalysisBlock(b);
         } finally {
-            lastNode = null;
+            // TODO: consider how to set approx node if block is empty, e.g., conditional block
+            approxCurrentNode = null;
         }
     }
 
@@ -104,7 +104,7 @@ public final class FlowAnalysis extends ForwardAnalysisImpl<FlowValue, FlowStore
         try {
             return super.runAnalysisFor(node, preOrPost, blockTransferInput, nodeValues, analysisCaches);
         } finally {
-            lastNode = null;
+            approxCurrentNode = null;
         }
     }
 
@@ -112,14 +112,15 @@ public final class FlowAnalysis extends ForwardAnalysisImpl<FlowValue, FlowStore
         return currentNode;
     }
 
-    @Nullable Node getLastNode() {
-        return lastNode;
+    @Nullable Node getApproxCurrentNode() {
+        return approxCurrentNode;
     }
 
     @Override
     protected void setCurrentNode(@Nullable Node currentNode) {
-        if (getCurrentNode() != null) {
-            lastNode = getCurrentNode();
+        Node prevNode = getCurrentNode();
+        if (prevNode != null) {
+            approxCurrentNode = prevNode;
         }
         super.setCurrentNode(currentNode);
     }
