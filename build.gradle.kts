@@ -30,6 +30,7 @@ val compilerArgsForJavacModules by extra(arrayOf(
     "--add-exports", "jdk.compiler/com.sun.tools.javac.tree=ALL-UNNAMED",
     "--add-exports", "jdk.compiler/com.sun.tools.javac.util=ALL-UNNAMED",
     "--add-exports", "jdk.compiler/com.sun.tools.javac.comp=ALL-UNNAMED",
+    "--add-exports", "jdk.compiler/com.sun.tools.javac.resources=ALL-UNNAMED",
 ))
 
 java {
@@ -57,7 +58,7 @@ dependencies {
     annotationProcessor("com.google.auto.service:auto-service:${Versions.AUTO_SERVICE}")
     compileOnly("com.google.auto.service:auto-service-annotations:${Versions.AUTO_SERVICE}")
 
-    implementation("com.beust:jcommander:${Versions.JCOMMANDER}")
+    implementation("info.picocli:picocli:${Versions.PICOCLI}")
 
     implementation("ch.qos.logback:logback-core:${Versions.LOGBACK}")
     implementation("ch.qos.logback:logback-classic:${Versions.LOGBACK}")
@@ -68,6 +69,9 @@ dependencies {
     implementation("io.github.eisop:annotation-file-utilities:*") {
         exclude(group = "com.google.errorprone", module = "javac")
     }
+
+    implementation("org.ow2.sat4j:org.ow2.sat4j.core:${Versions.SAT4J}")
+    implementation("org.ow2.sat4j:org.ow2.sat4j.maxsat:${Versions.SAT4J}")
 
     testImplementation("org.junit.jupiter:junit-jupiter-api:${Versions.JUNIT}")
     testRuntimeOnly("org.junit.jupiter:junit-jupiter-engine:${Versions.JUNIT}")

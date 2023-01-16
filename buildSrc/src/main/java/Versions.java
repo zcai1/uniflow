@@ -10,8 +10,9 @@ class Versions {
     public static final String AUTO_SERVICE = "1.0.1";
     public static final String GOOGLE_JAVA_FORMAT = "1.15.0";
     public static final String SPOTLESS = "6.11.0";
-    public static final String JCOMMANDER = "1.82";
     public static final String CHECKSTYLE = "10.4";
     public static final String SLF4J = "2.0.3";
-    public static final String LOGBACK = "1.4.4";
+    public static final String LOGBACK = "1.4.5";
+    public static final String SAT4J = "2.3.6";
+    public static final String PICOCLI = "4.7.0";
 }

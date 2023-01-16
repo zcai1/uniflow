@@ -1,7 +1,5 @@
 package org.cfginference.core;
 
-import com.beust.jcommander.JCommander;
-import com.beust.jcommander.ParameterException;
 import com.google.auto.service.AutoService;
 import com.google.common.base.Verify;
 import com.sun.source.util.JavacTask;
@@ -19,6 +17,7 @@ import org.cfginference.core.event.EventManager;
 import org.cfginference.core.flow.EnterAnalysis;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+import picocli.CommandLine;
 
 import javax.lang.model.element.TypeElement;
 
@@ -64,19 +63,20 @@ public final class CFGInferencePlugin implements Plugin, TaskListener {
         compiler.shouldStopPolicyIfError =
                 CompileStates.CompileState.max(compiler.shouldStopPolicyIfError, CompileStates.CompileState.FLOW);
 
-        JCommander jCommander = JCommander.newBuilder()
-                .programName(PROGRAM_NAME)
-                .addObject(options)
-                .build();
+        CommandLine cmd = new CommandLine(options);
+        cmd.setCaseInsensitiveEnumValuesAllowed(true);
+        cmd.setUsageHelpAutoWidth(true);
+        cmd.setPosixClusteredShortOptionsAllowed(false);
+
         try {
-            jCommander.parse(args);
-        } catch (ParameterException e) {
-            logger.error("Failed to parse options. Use option -h or --help for help/usage details.");
-            throw e;
+            cmd.parseArgs(args);
+        } catch (Exception e) {
+            throw new IllegalArgumentException(
+                    "Failed to parse options. Use option -h or --help for help/usage details.", e);
         }
 
         if (options.isHelp()) {
-            jCommander.usage();
+            cmd.usage(System.out);
         } else {
             validateOptions(options);
             setLogLevel(options.getLogLevel());
@@ -119,7 +119,7 @@ public final class CFGInferencePlugin implements Plugin, TaskListener {
                 "Minimum cache size is %s",
                 PluginOptions.CACHE_SIZE_MIN);
 
-        Verify.verify(options.getFlowDotDir() == null || !options.getFlowDotDir().isEmpty(),
+        Verify.verify(options.getFlowOutDir() == null || !options.getFlowOutDir().isEmpty(),
                 "Flowdotdir should never be empty");
     }
 }
