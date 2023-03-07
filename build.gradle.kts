@@ -102,7 +102,7 @@ tasks.shadowJar {
     }
 
     manifest {
-        attributes["Description"] = "CFG-based Inference"
+        attributes["Description"] = "UniFlow"
         attributes["Main-Class"] = "org.uniflow.InferenceMain"
     }
     archiveFileName.set("uniflow.jar")

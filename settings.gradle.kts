@@ -1,4 +1,4 @@
-rootProject.name = "cfg-based-inference"
+rootProject.name = "UniFlow"
 
 includeBuild ("../annotation-tools/annotation-file-utilities") {
     if (!file("../annotation-tools/annotation-file-utilities").exists()) {
