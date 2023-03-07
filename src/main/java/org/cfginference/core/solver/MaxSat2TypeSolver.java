@@ -11,6 +11,7 @@ import org.cfginference.core.solver.serializer.CnfVecIntSerializer;
 import org.cfginference.core.typesystem.QualifierHierarchy;
 import org.sat4j.core.VecInt;
 import org.sat4j.maxsat.WeightedMaxSatDecorator;
+import org.sat4j.pb.SolverFactory;
 import org.sat4j.specs.ContradictionException;
 import org.sat4j.specs.TimeoutException;
 
@@ -89,7 +90,7 @@ public class MaxSat2TypeSolver implements InferenceSolver {
 
 
         // When .newBoth is called, SAT4J will run two solvers and return the result of the first to halt
-        final WeightedMaxSatDecorator solver = new WeightedMaxSatDecorator(org.sat4j.pb.SolverFactory.newBoth());
+        final WeightedMaxSatDecorator solver = new WeightedMaxSatDecorator(SolverFactory.newBoth());
 
         solver.newVar(totalVars);
         solver.setExpectedNumberOfClauses(totalClauses);

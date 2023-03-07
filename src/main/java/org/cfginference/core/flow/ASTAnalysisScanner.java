@@ -7,6 +7,7 @@ import com.sun.source.tree.VariableTree;
 import com.sun.source.util.TreePath;
 import com.sun.source.util.TreePathScanner;
 import com.sun.tools.javac.util.Context;
+import org.cfginference.core.PluginOptions;
 import org.cfginference.core.TypeSystems;
 import org.cfginference.core.model.element.QualifiedElement;
 import org.cfginference.core.model.slot.ProductSlot;
@@ -30,10 +31,13 @@ public final class ASTAnalysisScanner extends TreePathScanner<Void, Void> {
 
     private final SlotLocator slotLocator;
 
+    private final boolean inferenceMode;
+
     private ASTAnalysisScanner(Context context) {
         this.context = context;
         this.typeSystems = TypeSystems.instance(context);
         this.slotLocator = SlotLocator.instance(context);
+        this.inferenceMode = PluginOptions.instance(context).getMode().isInference();
 
         context.put(ASTAnalysisScanner.class, this);
     }
@@ -81,6 +85,9 @@ public final class ASTAnalysisScanner extends TreePathScanner<Void, Void> {
     }
 
     private void locateSourceSlots(Tree tree) {
+        if (!inferenceMode) {
+            return;
+        }
         Element element = Objects.requireNonNull(TreeUtils.elementFromTree(tree));
         QualifiedElement<ProductSlot> declType = getCombinedQualifiedElement(element);
         slotLocator.locateSourceSlots(declType, tree);

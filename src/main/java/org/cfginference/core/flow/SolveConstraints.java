@@ -23,8 +23,13 @@ import org.cfginference.core.model.slot.Slot;
 import org.cfginference.core.model.slot.SlotManager;
 import org.cfginference.core.model.slot.SourceSlot;
 import org.cfginference.core.model.util.SlotLocator;
+import org.cfginference.core.solver.DefaultInferenceResult;
 import org.cfginference.core.solver.InferenceResult;
-import org.cfginference.core.solver.MaxSat2TypeSolver;
+import org.cfginference.core.solver.backend.Solver;
+import org.cfginference.core.solver.backend.maxsat.MaxSatSolverFactory;
+import org.cfginference.core.solver.frontend.LatticeBuilder;
+import org.cfginference.core.solver.frontend.TwoQualifiersLattice;
+import org.cfginference.core.solver.util.SolverOptions;
 import org.cfginference.core.typesystem.QualifierHierarchy;
 import org.cfginference.core.typesystem.TypeSystem;
 import org.cfginference.util.JaifApplier;
@@ -44,6 +49,7 @@ import java.util.Map;
 import java.util.Objects;
 import java.util.Properties;
 import java.util.Set;
+import java.util.stream.Collectors;
 
 public final class SolveConstraints {
 
@@ -63,6 +69,10 @@ public final class SolveConstraints {
 
     private final Properties properties;
 
+    private final MaxSatSolverFactory maxSatSolverFactory;
+
+    private final AlwaysFalseConstraint alwaysFalseConstraint;
+
     private final Log log;
     private SolveConstraints(Context context) {
         this.context = context;
@@ -71,9 +81,11 @@ public final class SolveConstraints {
         this.slotLocator = SlotLocator.instance(context);
         this.slotManager = SlotManager.instance(context);
         this.constraintManager = ConstraintManager.instance(context);
+        this.maxSatSolverFactory = MaxSatSolverFactory.instance(context);
         this.log = Log.instance(context);
 
         this.properties = loadProperties();
+        this.alwaysFalseConstraint = AlwaysFalseConstraint.instance();
 
         context.put(SolveConstraints.class, this);
     }
@@ -112,8 +124,8 @@ public final class SolveConstraints {
             logger.info("Solving constraints for {}", ts.getClass().getSimpleName());
             for (QualifierHierarchy q : ts.getQualifierHierarchies()) {
                 for (Constraint c : allConstraints.get(q)) {
-                    if (c instanceof AlwaysFalseConstraint falseConstraint) {
-                        reportUnsatConstraint(q, falseConstraint);
+                    if (c == alwaysFalseConstraint) {
+                        reportUnsatConstraint(q, c);
                     } else {
                         logger.warn("Found variable constraint {} for QualifierHierarchy {}", c, q);
                     }
@@ -181,16 +193,45 @@ public final class SolveConstraints {
 
     private InferenceResult solveForInference(QualifierHierarchy qualifierHierarchy) {
         // TODO: support general solvers
-        MaxSat2TypeSolver solver = new MaxSat2TypeSolver();
+        boolean hasAlwaysFalse = false;
         SetMultimap<QualifierHierarchy, Constraint> allConstraints = constraintManager.getEffectiveConstraints();
-
         Set<Constraint> constraints = allConstraints.get(qualifierHierarchy);
-        InferenceResult result = solver.solve(context,
-                Collections.emptyMap(),
-                slotManager.getSlots().stream().filter(s -> s.getOwner() == qualifierHierarchy).toList(),
-                constraints,
-                qualifierHierarchy);
-        return result;
+        if (constraints.contains(alwaysFalseConstraint)) {
+            hasAlwaysFalse = true;
+            constraints = new LinkedHashSet<>(constraints);
+            constraints.remove(alwaysFalseConstraint);
+        }
+
+        Set<Slot> slots = slotManager.getSlots().stream().filter(s -> s.getOwner() == qualifierHierarchy)
+                .collect(Collectors.toSet());
+        SolverOptions solverOptions = new SolverOptions(Collections.emptyMap());
+        TwoQualifiersLattice lattice = new LatticeBuilder().buildTwoTypeLattice(qualifierHierarchy,
+                qualifierHierarchy.getTopQualifier(),
+                qualifierHierarchy.getBottomQualifier());
+
+        Solver<?> solver = maxSatSolverFactory.createSolver(solverOptions, slots, constraints, lattice);
+        Map<Integer, Qualifier> solutions = solver.solve();
+        if (solutions != null && !hasAlwaysFalse) {
+            return new DefaultInferenceResult(solutions);
+        } else {
+            Set<Constraint> unsatConstraints = new LinkedHashSet<>();
+            if (solutions == null) {
+                unsatConstraints.addAll(solver.explainUnsatisfiable());
+            }
+            if (hasAlwaysFalse) {
+                unsatConstraints.add(alwaysFalseConstraint);
+            }
+            return new DefaultInferenceResult(unsatConstraints);
+        }
+        // MaxSat2TypeSolver solver = new MaxSat2TypeSolver();
+        //
+        //
+        // InferenceResult result = solver.solve(context,
+        //         Collections.emptyMap(),
+        //         ,
+        //         constraints,
+        //         qualifierHierarchy);
+        // return result;
     }
 
     private void reportUnsatConstraint(QualifierHierarchy q, Constraint c) {
