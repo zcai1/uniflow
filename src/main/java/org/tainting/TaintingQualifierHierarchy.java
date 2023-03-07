@@ -1,7 +1,7 @@
 package org.tainting;
 
-import org.cfginference.core.model.qualifier.Qualifier;
-import org.cfginference.core.typesystem.AbstractQualifierHierarchy;
+import org.uniflow.core.model.qualifier.Qualifier;
+import org.uniflow.core.typesystem.AbstractQualifierHierarchy;
 import org.checkerframework.checker.nullness.qual.Nullable;
 import org.checkerframework.checker.tainting.qual.Tainted;
 import org.checkerframework.checker.tainting.qual.Untainted;

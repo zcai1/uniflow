@@ -14,7 +14,7 @@ plugins {
 
 apply(plugin = "org.checkerframework")
 
-group = "org.cfginference"
+group = "org.uniflow"
 version = "1.0-SNAPSHOT"
 
 val compilerArgsForJavacModules by extra(arrayOf(
@@ -103,9 +103,9 @@ tasks.shadowJar {
 
     manifest {
         attributes["Description"] = "CFG-based Inference"
-        attributes["Main-Class"] = "org.cfginference.InferenceMain"
+        attributes["Main-Class"] = "org.uniflow.InferenceMain"
     }
-    archiveFileName.set("cfginf.jar")
+    archiveFileName.set("uniflow.jar")
     destinationDirectory.set(file("${projectDir}/bin"))
 }
 
