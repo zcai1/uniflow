@@ -23,11 +23,11 @@ import javax.lang.model.element.TypeElement;
 
 @AutoService(Plugin.class)
 @SuppressWarnings("initialization.field.uninitialized")
-public final class UniflowPlugin implements Plugin, TaskListener {
+public final class UniFlowPlugin implements Plugin, TaskListener {
 
-    public static final Logger logger = LoggerFactory.getLogger(UniflowPlugin.class);
+    public static final Logger logger = LoggerFactory.getLogger(UniFlowPlugin.class);
 
-    private static final String PROGRAM_NAME = "Uniflow";
+    private static final String PROGRAM_NAME = "UniFlow";
 
     private Context context;
 
